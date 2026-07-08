@@ -298,7 +298,7 @@ export async function runDetectors(
   const allFindings: DetectorFinding[] = [];
   for (const r of results) {
     for (const f of r.findings) {
-      const key = `${f.criterion}::${f.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
+      const key = `${f.criterion_id}::${f.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
       if (seen.has(key)) continue;
       seen.add(key);
       allFindings.push(f);
