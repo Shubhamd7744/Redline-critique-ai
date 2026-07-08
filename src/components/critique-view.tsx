@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PRINCIPLE_LABELS,
-  SEVERITY_LABEL,
   type CritiquePayload,
   type Issue,
   type RubricScores,
-  type Severity,
 } from "@/lib/critique-types";
 import { DecisionLog } from "@/components/decision-log";
+import {
+  PRIORITY_SCHEMES,
+  PRIORITY_SCHEME_ORDER,
+  badgeClass,
+  type PriorityScheme,
+} from "@/lib/priority-schemes";
 
 export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   const entries = Object.entries(rubric) as [keyof RubricScores, number][];
@@ -30,28 +34,37 @@ export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   );
 }
 
-const SEVERITY_STYLES: Record<Severity, string> = {
-  critical: "bg-primary/10 text-primary",
-  suggested: "bg-stone-200/60 text-foreground",
-  polish: "bg-stone-100 text-muted-foreground",
-};
 
 export function IssueList({
   issues,
   activeId,
   onSelect,
+  scheme = "severity",
 }: {
   issues: Issue[];
   activeId: string | null;
   onSelect: (id: string | null) => void;
+  scheme?: PriorityScheme;
 }) {
+  const spec = PRIORITY_SCHEMES[scheme];
+  const decorated = useMemo(
+    () =>
+      issues
+        .map((issue, originalIdx) => ({
+          issue,
+          originalIdx,
+          badge: spec.badgeFor(issue),
+        }))
+        .sort((a, b) => a.badge.rank - b.badge.rank),
+    [issues, spec],
+  );
   return (
     <div>
       <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-        Issue Log
+        Issue Log · {spec.label}
       </h3>
       <div className="space-y-4">
-        {issues.map((issue, idx) => {
+        {decorated.map(({ issue, originalIdx, badge }) => {
           const active = activeId === issue.id;
           const isCritical = issue.severity === "critical";
           return (
@@ -65,12 +78,13 @@ export function IssueList({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span
-                  className={`px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase ${SEVERITY_STYLES[issue.severity]}`}
+                  title={badge.hint}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase ${badgeClass(badge.tone)}`}
                 >
-                  {SEVERITY_LABEL[issue.severity]}
+                  {badge.label}
                 </span>
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  #{String(idx + 1).padStart(2, "0")} {PRINCIPLE_LABELS[issue.principle] ?? issue.principle}
+                  #{String(originalIdx + 1).padStart(2, "0")} {PRINCIPLE_LABELS[issue.principle] ?? issue.principle}
                 </span>
                 {issue.criterion_id && (
                   <span className="text-[10px] font-mono text-muted-foreground/80 ml-auto">
@@ -191,6 +205,24 @@ export function ResultsView({
   shareUrl?: string;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Prioritization scheme — presentational only; persisted per critique so a
+  // reviewer's chosen vocabulary survives navigation. Falls back to Severity.
+  const storageKey = critiqueId ? `critique:${critiqueId}:priority-scheme` : null;
+  const [scheme, setScheme] = useState<PriorityScheme>("severity");
+  useEffect(() => {
+    if (!storageKey) return;
+    const saved = window.localStorage.getItem(storageKey);
+    if (saved && (PRIORITY_SCHEME_ORDER as string[]).includes(saved)) {
+      setScheme(saved as PriorityScheme);
+    }
+  }, [storageKey]);
+  useEffect(() => {
+    if (!storageKey) return;
+    window.localStorage.setItem(storageKey, scheme);
+  }, [scheme, storageKey]);
+  const spec = PRIORITY_SCHEMES[scheme];
+
   return (
     <section className="grid grid-cols-1 md:grid-cols-12 gap-12">
       <div className="md:col-span-8 relative">
@@ -221,7 +253,34 @@ export function ResultsView({
             )}
           </div>
           <RubricPanel rubric={payload.rubric} />
-          <IssueList issues={payload.issues} activeId={activeId} onSelect={setActiveId} />
+          <div>
+            <label className="block">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                Priority display
+              </span>
+              <select
+                value={scheme}
+                onChange={(e) => setScheme(e.target.value as PriorityScheme)}
+                className="mt-1 w-full border border-border rounded-sm bg-white text-sm px-2 py-1.5"
+              >
+                {PRIORITY_SCHEME_ORDER.map((k) => (
+                  <option key={k} value={k}>
+                    {PRIORITY_SCHEMES[k].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              {spec.description}
+            </p>
+          </div>
+          <IssueList
+            issues={payload.issues}
+            activeId={activeId}
+            onSelect={setActiveId}
+            scheme={scheme}
+          />
+
           {critiqueId && (
             <DecisionLog
               critiqueId={critiqueId}
