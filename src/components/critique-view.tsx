@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PRINCIPLE_LABELS,
   SEVERITY_LABEL,
@@ -8,6 +8,12 @@ import {
   type Severity,
 } from "@/lib/critique-types";
 import { DecisionLog } from "@/components/decision-log";
+import {
+  PRIORITY_SCHEMES,
+  PRIORITY_SCHEME_ORDER,
+  badgeClass,
+  type PriorityScheme,
+} from "@/lib/priority-schemes";
 
 export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   const entries = Object.entries(rubric) as [keyof RubricScores, number][];
