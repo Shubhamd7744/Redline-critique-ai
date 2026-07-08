@@ -131,7 +131,23 @@ export const uploadCritique = createServerFn({ method: "POST" })
 
 export const analyzeCritique = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        mode: z
+          .enum([
+            "quick_take",
+            "design_review",
+            "accessibility_audit",
+            "heuristic_eval",
+            "ai_feature_review",
+            "ethics_sweep",
+          ])
+          .default("design_review"),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("critiques")
@@ -150,9 +166,11 @@ export const analyzeCritique = createServerFn({ method: "POST" })
 
     try {
       const { runDetectors } = await import("./detectors.server");
-      const merged = await runDetectors(signed.signedUrl, apiKey);
+      const { RITUAL_MODES } = await import("./critique-types");
+      const merged = await runDetectors(signed.signedUrl, apiKey, data.mode);
+      const expectedPillars = RITUAL_MODES[data.mode].pillars.length;
 
-      if (merged.detector_errors.length === 6) {
+      if (merged.detector_errors.length === expectedPillars) {
         throw new Error(
           `All detectors failed. First error: ${merged.detector_errors[0].error}`,
         );
@@ -165,6 +183,7 @@ export const analyzeCritique = createServerFn({ method: "POST" })
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rubric: {
             ...merged.rubric,
+            mode: merged.mode,
             pillar_scores: merged.pillar_scores,
             detector_errors: merged.detector_errors,
           } as any,
