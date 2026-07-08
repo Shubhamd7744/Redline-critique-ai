@@ -288,8 +288,12 @@ export const updateShareSettings = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !row) throw new Error("Not found");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const update: Record<string, any> = {};
+    const update: {
+      is_public?: boolean;
+      share_slug?: string;
+      share_password_hash?: string | null;
+      share_expires_at?: string | null;
+    } = {};
 
     if (typeof data.isPublic === "boolean") {
       update.is_public = data.isPublic;
