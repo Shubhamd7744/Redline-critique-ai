@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   PRINCIPLE_LABELS,
-  SEVERITY_LABEL,
   type CritiquePayload,
   type Issue,
   type RubricScores,
-  type Severity,
 } from "@/lib/critique-types";
 import { DecisionLog } from "@/components/decision-log";
 import {
