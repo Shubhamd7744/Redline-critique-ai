@@ -98,14 +98,36 @@ export const uploadCritique = createServerFn({ method: "POST" })
         projectId: z.string().uuid().nullable(),
         title: z.string().min(1).max(160),
         fileBase64: z.string().min(20),
-        mimeType: z.string().min(3),
+        mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const ext = data.mimeType.split("/")[1] || "png";
+    const extMap: Record<string, string> = {
+      "image/png": "png",
+      "image/jpeg": "jpg",
+      "image/webp": "webp",
+    };
+    const ext = extMap[data.mimeType];
     const path = `${context.userId}/${crypto.randomUUID()}.${ext}`;
     const bytes = Uint8Array.from(atob(data.fileBase64), (c) => c.charCodeAt(0));
+
+    // Defense-in-depth: verify magic bytes match declared MIME type
+    const isPng =
+      bytes.length > 8 &&
+      bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+    const isJpeg =
+      bytes.length > 3 &&
+      bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const isWebp =
+      bytes.length > 12 &&
+      bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+    const matches =
+      (data.mimeType === "image/png" && isPng) ||
+      (data.mimeType === "image/jpeg" && isJpeg) ||
+      (data.mimeType === "image/webp" && isWebp);
+    if (!matches) throw new Error("File content does not match declared image type");
 
     const { error: upErr } = await context.supabase.storage
       .from("designs")
