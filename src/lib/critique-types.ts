@@ -17,15 +17,73 @@ export interface RubricScores {
   consistency: number;
 }
 
+/**
+ * Four-slot finding schema.
+ *
+ * Every finding must carry the four analytical slots professional reviewers use:
+ *   - observation    → what was seen (neutral, descriptive)
+ *   - evidence       → the measured value / concrete artefact backing it
+ *   - user_impact    → who is harmed and how (grounds severity)
+ *   - fix_suggestion → a direction, not a prescriptive solution
+ *
+ * Plus provenance:
+ *   - criterion_id   → e.g. "nielsen.h5", "wcag.2.5.8", "hax.g3"
+ *   - source_url     → canonical https:// framework URL (validated)
+ *
+ * Legacy fields `description` and `fix` are retained (mirrored from
+ * observation + user_impact and fix_suggestion) so existing views keep
+ * rendering without changes.
+ */
 export interface Issue {
   id: string;
   severity: Severity;
   principle: Principle;
   title: string;
+
+  // Four-slot schema (required going forward)
+  observation: string;
+  evidence: string;
+  user_impact: string;
+  fix_suggestion: string;
+
+  // Provenance
+  criterion_id: string;
+  source_url?: string; // validated https:// URL, omitted when invalid
+  confidence?: number; // 0..1
+
+  // Legacy mirrors — kept for backward compatibility with existing views
   description: string;
   fix: string;
+
   x: number; // 0..1
   y: number; // 0..1
+}
+
+// Validate that a candidate string is a well-formed https URL. Returns the
+// normalized URL string on success, or undefined so callers can omit the
+// field entirely — we prefer no source over an invalid one.
+export function validateSourceUrl(input: unknown): string | undefined {
+  if (typeof input !== "string") return undefined;
+  const trimmed = input.trim();
+  if (!trimmed) return undefined;
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== "https:") return undefined;
+    return u.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+// Validate a criterion id like "nielsen.h5", "wcag.2.5.8", "hax.g3".
+// Namespace + dot + alphanumeric segments. Falls back to a pillar-scoped
+// "<pillar>.unspecified" so downstream code never sees an empty id.
+const CRITERION_ID_RE = /^[a-z][a-z0-9_]*(\.[a-z0-9]+)+$/i;
+export function validateCriterionId(input: unknown, fallback: string): string {
+  if (typeof input !== "string") return fallback;
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed) return fallback;
+  return CRITERION_ID_RE.test(trimmed) ? trimmed : fallback;
 }
 
 export interface CritiquePayload {
