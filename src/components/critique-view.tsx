@@ -14,21 +14,27 @@ import {
 } from "@/lib/priority-schemes";
 
 export function RubricPanel({ rubric }: { rubric: RubricScores }) {
-  const entries = Object.entries(rubric) as [keyof RubricScores, number][];
+  const entries = Object.entries(rubric) as [keyof RubricScores, unknown][];
   return (
     <div>
       <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
         Analysis Rubric
       </h3>
       <div className="space-y-3">
-        {entries.map(([k, v]) => (
-          <div key={k} className="flex items-end justify-between border-b border-border pb-1">
-            <span className="text-sm">{PRINCIPLE_LABELS[k]}</span>
-            <span className={`font-mono text-lg font-medium ${v < 6 ? "text-primary" : ""}`}>
-              {v.toFixed(1)}
-            </span>
-          </div>
-        ))}
+        {entries.map(([k, raw]) => {
+          const n = typeof raw === "number" ? raw : Number(raw);
+          const valid = Number.isFinite(n);
+          return (
+            <div key={k} className="flex items-end justify-between border-b border-border pb-1">
+              <span className="text-sm">{PRINCIPLE_LABELS[k] ?? k}</span>
+              <span
+                className={`font-mono text-lg font-medium ${valid && n < 6 ? "text-primary" : ""}`}
+              >
+                {valid ? n.toFixed(1) : "—"}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
