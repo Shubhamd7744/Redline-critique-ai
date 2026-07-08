@@ -100,46 +100,144 @@ function DashboardPage() {
 
       <section>
         <div className="flex items-baseline justify-between mb-8 border-b border-border pb-4">
-          <h2 className="font-serif italic text-4xl">Recent critiques</h2>
+          <h2 className="font-serif italic text-4xl">Timeline</h2>
+          <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+            Chronological · newest first
+          </span>
         </div>
         {critiques.data && critiques.data.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No critiques yet. Upload a mockup above to begin.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {critiques.data?.map((c) => (
-              <Link
-                key={c.id}
-                to="/critiques/$id"
-                params={{ id: c.id }}
-                className="group cursor-pointer"
-              >
-                <div className="aspect-video bg-white border border-border p-2 mb-3 group-hover:border-primary transition-colors">
-                  <div className="w-full h-full bg-stone-panel grid place-items-center">
-                    <span className="font-mono text-[10px] uppercase text-muted-foreground">
-                      {c.status === "analyzing" ? "Analyzing…" : c.status === "failed" ? "Failed" : "Complete"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-start gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium truncate">{c.title}</p>
-                    <p className="text-[11px] font-mono text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {c.overall_score != null && (
-                    <span className="font-mono text-[11px] px-1.5 py-0.5 bg-stone-100 rounded shrink-0">
-                      {Number(c.overall_score).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <CritiqueTimeline entries={critiques.data ?? []} projects={projects.data ?? []} />
         )}
       </section>
     </main>
   );
 }
+
+type CritiqueEntry = {
+  id: string;
+  title: string;
+  status: string;
+  overall_score: number | null;
+  image_path: string;
+  project_id: string | null;
+  created_at: string;
+};
+
+type ProjectEntry = { id: string; name: string };
+
+function groupLabel(date: Date): string {
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayMs = 86_400_000;
+  const diffDays = Math.floor((startOfDay(now) - startOfDay(date)) / dayMs);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return "Earlier this week";
+  if (diffDays < 30) return "Earlier this month";
+  if (date.getFullYear() === now.getFullYear()) {
+    return date.toLocaleDateString(undefined, { month: "long" });
+  }
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  analyzing: "bg-stone-100 text-muted-foreground",
+  failed: "bg-primary/10 text-primary",
+  complete: "bg-stone-200/60 text-foreground",
+};
+
+function CritiqueTimeline({
+  entries,
+  projects,
+}: {
+  entries: CritiqueEntry[];
+  projects: ProjectEntry[];
+}) {
+  const projectMap = new Map(projects.map((p) => [p.id, p.name]));
+
+  const groups: { label: string; items: CritiqueEntry[] }[] = [];
+  for (const entry of entries) {
+    const label = groupLabel(new Date(entry.created_at));
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(entry);
+    else groups.push({ label, items: [entry] });
+  }
+
+  return (
+    <div className="relative">
+      <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" aria-hidden />
+      <div className="space-y-12">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="relative z-10 size-[15px] rounded-full bg-primary ring-4 ring-background" />
+              <p className="font-mono text-[11px] uppercase tracking-widest text-primary">
+                {group.label}
+              </p>
+              <span className="flex-1 h-px bg-border" />
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {group.items.length} {group.items.length === 1 ? "entry" : "entries"}
+              </span>
+            </div>
+            <ul className="pl-8 space-y-3">
+              {group.items.map((c) => {
+                const time = new Date(c.created_at).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+                const projectName = c.project_id ? projectMap.get(c.project_id) : null;
+                return (
+                  <li key={c.id} className="relative">
+                    <span
+                      className="absolute -left-[25px] top-4 size-[7px] rounded-full bg-border ring-2 ring-background"
+                      aria-hidden
+                    />
+                    <Link
+                      to="/critiques/$id"
+                      params={{ id: c.id }}
+                      className="group flex items-center gap-4 border border-border bg-white p-4 hover:border-primary transition-colors"
+                    >
+                      <span className="font-mono text-[10px] text-muted-foreground w-14 shrink-0">
+                        {time}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                          {c.title}
+                        </p>
+                        <p className="text-[11px] font-mono text-muted-foreground truncate">
+                          {projectName ? `${projectName} · ` : "Unfiled · "}
+                          {new Date(c.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase shrink-0 ${
+                          STATUS_STYLES[c.status] ?? STATUS_STYLES.complete
+                        }`}
+                      >
+                        {c.status === "analyzing"
+                          ? "Analyzing"
+                          : c.status === "failed"
+                            ? "Failed"
+                            : "Complete"}
+                      </span>
+                      {c.overall_score != null && (
+                        <span className="font-serif italic text-2xl shrink-0 w-10 text-right">
+                          {Number(c.overall_score).toFixed(1)}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
