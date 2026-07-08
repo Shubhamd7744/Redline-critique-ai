@@ -98,12 +98,17 @@ export const uploadCritique = createServerFn({ method: "POST" })
         projectId: z.string().uuid().nullable(),
         title: z.string().min(1).max(160),
         fileBase64: z.string().min(20),
-        mimeType: z.string().min(3),
+        mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const ext = data.mimeType.split("/")[1] || "png";
+    const extMap: Record<string, string> = {
+      "image/png": "png",
+      "image/jpeg": "jpg",
+      "image/webp": "webp",
+    };
+    const ext = extMap[data.mimeType];
     const path = `${context.userId}/${crypto.randomUUID()}.${ext}`;
     const bytes = Uint8Array.from(atob(data.fileBase64), (c) => c.charCodeAt(0));
 
