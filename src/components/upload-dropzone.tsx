@@ -1,17 +1,25 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useRouter } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
 
-async function fileToBase64(file: File): Promise<string> {
+type Phase = "idle" | "reading" | "uploading" | "finalizing" | "error";
+
+function readFileAsBase64(
+  file: File,
+  onProgress: (pct: number) => void,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+    };
     reader.onload = () => {
       const result = reader.result as string;
-      resolve(result.split(",")[1]); // strip data:image/...;base64,
+      resolve(result.split(",")[1]);
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read file"));
     reader.readAsDataURL(file);
   });
 }
@@ -21,21 +29,69 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const upload = useServerFn(uploadCritique);
   const analyze = useServerFn(analyzeCritique);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const tickRef = useRef<number | null>(null);
+
+  const busy = phase === "reading" || phase === "uploading" || phase === "finalizing";
+
+  useEffect(() => {
+    return () => {
+      if (tickRef.current) window.clearInterval(tickRef.current);
+    };
+  }, []);
+
+  function startFakeProgress(from: number, cap: number) {
+    if (tickRef.current) window.clearInterval(tickRef.current);
+    setProgress(from);
+    tickRef.current = window.setInterval(() => {
+      setProgress((p) => {
+        if (p >= cap) return p;
+        // ease out toward cap
+        const remaining = cap - p;
+        return p + Math.max(0.3, remaining * 0.04);
+      });
+    }, 120);
+  }
+
+  function stopFakeProgress() {
+    if (tickRef.current) {
+      window.clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+  }
+
+  function validate(file: File): string | null {
+    if (!file.type.startsWith("image/")) return "That file type isn't supported. Use PNG, JPG, or WebP.";
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return "Only PNG, JPG, or WebP images are accepted.";
+    if (file.size > 20 * 1024 * 1024) return "File is over the 20MB limit. Try compressing or resizing.";
+    if (file.size === 0) return "That file appears to be empty.";
+    return null;
+  }
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (PNG, JPG, WebP).");
+    setError(null);
+    setPendingFile(file);
+    const v = validate(file);
+    if (v) {
+      setPhase("error");
+      setError(v);
+      setProgress(0);
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Max file size is 20MB.");
-      return;
-    }
-    setBusy(true);
+
     try {
-      const base64 = await fileToBase64(file);
+      // Phase 1: read
+      setPhase("reading");
+      setProgress(0);
+      const base64 = await readFileAsBase64(file, (p) => setProgress(p * 0.15));
+
+      // Phase 2: server upload (no observable progress → animated)
+      setPhase("uploading");
+      startFakeProgress(15, 88);
       const { id } = await upload({
         data: {
           projectId,
@@ -44,22 +100,143 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           mimeType: file.type,
         },
       });
+      stopFakeProgress();
+
+      // Phase 3: finalize
+      setPhase("finalizing");
+      setProgress(100);
+
       router.navigate({ to: "/critiques/$id", params: { id } });
-      // fire analysis async; results page polls
       analyze({ data: { id } }).catch((e) => {
         console.error(e);
         toast.error(`Analysis failed: ${e.message ?? "unknown"}`);
       });
     } catch (e) {
+      stopFakeProgress();
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(msg);
-      setBusy(false);
+      setPhase("error");
+      setError(msg || "Upload failed");
+      setProgress(0);
     }
   }
 
+  function reset() {
+    stopFakeProgress();
+    setPhase("idle");
+    setProgress(0);
+    setError(null);
+    setPendingFile(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function retry() {
+    if (pendingFile) {
+      void handleFile(pendingFile);
+    } else {
+      reset();
+      inputRef.current?.click();
+    }
+  }
+
+  const phaseLabel =
+    phase === "reading"
+      ? "Reading file…"
+      : phase === "uploading"
+        ? "Uploading to server…"
+        : phase === "finalizing"
+          ? "Handing off to analyzer…"
+          : "";
+
+  // ---------- Error state ----------
+  if (phase === "error") {
+    return (
+      <div
+        className="relative border-2 border-dashed border-primary/60 rounded-sm h-[360px] flex flex-col items-center justify-center bg-primary/5 p-8"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="flex flex-col items-center gap-5 text-center max-w-md">
+          <div className="size-12 rounded-full bg-primary text-white flex items-center justify-center font-mono text-lg font-bold">
+            !
+          </div>
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-2">
+              Upload failed
+            </p>
+            <p className="font-medium text-lg leading-snug">{error}</p>
+            {pendingFile && (
+              <p className="text-xs font-mono text-muted-foreground mt-2 truncate">
+                {pendingFile.name} · {(pendingFile.size / 1024 / 1024).toFixed(2)}MB
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={retry}
+              className="px-4 py-2 bg-primary text-white text-sm rounded-sm hover:bg-primary/90"
+            >
+              {pendingFile && validate(pendingFile) === null ? "Retry" : "Choose different file"}
+            </button>
+            <button
+              type="button"
+              onClick={reset}
+              className="px-4 py-2 border border-border text-sm rounded-sm hover:bg-white"
+            >
+              Cancel
+            </button>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- Busy state ----------
+  if (busy) {
+    return (
+      <div
+        className="relative border-2 border-dashed border-primary rounded-sm h-[360px] flex flex-col items-center justify-center bg-white p-8"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div className="flex flex-col items-center gap-5 text-center w-full max-w-md">
+          <div className="font-mono text-[11px] uppercase tracking-widest text-primary">
+            {phaseLabel}
+          </div>
+          {pendingFile && (
+            <p className="text-sm font-medium truncate max-w-full">{pendingFile.name}</p>
+          )}
+          <div className="w-full">
+            <div className="h-1.5 w-full bg-stone-100 rounded-sm overflow-hidden">
+              <div
+                className="h-full bg-primary transition-[width] duration-150 ease-out"
+                style={{ width: `${Math.min(100, progress)}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span>{phase}</span>
+              <span>{Math.round(Math.min(100, progress))}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- Idle state ----------
   return (
     <div
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => {
         e.preventDefault();
@@ -70,7 +247,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       onClick={() => inputRef.current?.click()}
       className={`group relative border-2 border-dashed rounded-sm h-[360px] flex flex-col items-center justify-center bg-white/50 transition-all cursor-pointer ${
         dragOver ? "border-primary bg-white" : "border-border hover:border-primary/40 hover:bg-white"
-      } ${busy ? "opacity-60 pointer-events-none" : ""}`}
+      }`}
     >
       <input
         ref={inputRef}
@@ -84,9 +261,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           <div className="size-2 bg-primary rounded-full" />
         </div>
         <div>
-          <p className="font-medium text-lg">
-            {busy ? "Uploading…" : "Drop mockup to initiate critique"}
-          </p>
+          <p className="font-medium text-lg">Drop mockup to initiate critique</p>
           <p className="text-sm text-muted-foreground">PNG, JPG or WebP · max 20MB</p>
         </div>
       </div>
