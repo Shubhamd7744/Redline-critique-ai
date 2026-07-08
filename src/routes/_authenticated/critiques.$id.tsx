@@ -99,11 +99,11 @@ function CritiquePage() {
             Download PDF
           </button>
           <button
-            onClick={handleShare}
-            disabled={busy || c.status !== "complete"}
+            onClick={() => setShareOpen(true)}
+            disabled={c.status !== "complete"}
             className="px-3 py-2 border border-border rounded-sm text-sm font-medium hover:bg-muted disabled:opacity-50"
           >
-            {c.is_public ? "Sharing on" : "Share"}
+            {c.is_public ? "Sharing…" : "Share"}
           </button>
           <button
             onClick={handleDelete}
@@ -116,17 +116,49 @@ function CritiquePage() {
 
       {c.is_public && c.share_slug && (
         <div className="mb-8 p-3 border border-primary/20 bg-primary/5 rounded-sm text-xs font-mono flex items-center justify-between gap-3">
-          <span>Public link: /c/{c.share_slug}</span>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/c/${c.share_slug}`);
-              toast.success("Copied");
-            }}
-            className="text-primary underline"
-          >
-            Copy
-          </button>
+          <span className="flex items-center gap-3 flex-wrap">
+            <span>Public link: /c/{c.share_slug}</span>
+            {c.has_password && (
+              <span className="px-1.5 py-0.5 bg-primary text-white text-[10px] uppercase tracking-widest">
+                Password
+              </span>
+            )}
+            {c.share_expires_at && (
+              <span className="text-muted-foreground">
+                Expires {new Date(c.share_expires_at).toLocaleString()}
+              </span>
+            )}
+          </span>
+          <span className="flex gap-3 shrink-0">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/c/${c.share_slug}`);
+                toast.success("Copied");
+              }}
+              className="text-primary underline"
+            >
+              Copy
+            </button>
+            <button onClick={() => setShareOpen(true)} className="text-primary underline">
+              Manage
+            </button>
+          </span>
         </div>
+      )}
+
+      {shareOpen && (
+        <ShareSettingsDialog
+          critique={{
+            id: c.id,
+            is_public: c.is_public,
+            share_slug: c.share_slug,
+            share_expires_at: c.share_expires_at,
+            has_password: c.has_password,
+          }}
+          onClose={() => setShareOpen(false)}
+          onChange={() => q.refetch()}
+          submit={(payload) => updateFn({ data: payload })}
+        />
       )}
 
       {c.status === "analyzing" && <AnalyzingState />}
