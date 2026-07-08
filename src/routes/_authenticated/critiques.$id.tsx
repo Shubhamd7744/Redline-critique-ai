@@ -3,10 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getCritique, toggleShare, deleteCritique } from "@/lib/critique.functions";
+import { getCritique, updateShareSettings, deleteCritique } from "@/lib/critique.functions";
 import { ResultsView, AnalyzingState } from "@/components/critique-view";
 import type { CritiquePayload } from "@/lib/critique-types";
 import { downloadCritiquePdf } from "@/lib/critique-pdf";
+
+
 
 export const Route = createFileRoute("/_authenticated/critiques/$id")({
   head: () => ({ meta: [{ title: "Critique — Redline" }, { name: "robots", content: "noindex" }] }),
@@ -16,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/critiques/$id")({
 function CritiquePage() {
   const { id } = Route.useParams();
   const fn = useServerFn(getCritique);
-  const shareFn = useServerFn(toggleShare);
+  const updateFn = useServerFn(updateShareSettings);
   const deleteFn = useServerFn(deleteCritique);
-  const [busy, setBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["critique", id],
@@ -28,25 +30,6 @@ function CritiquePage() {
       return d && d.status === "analyzing" ? 2000 : false;
     },
   });
-
-  async function handleShare() {
-    setBusy(true);
-    try {
-      const r = await shareFn({ data: { id } });
-      if (r.is_public && r.share_slug) {
-        const url = `${window.location.origin}/c/${r.share_slug}`;
-        await navigator.clipboard.writeText(url);
-        toast.success("Public link copied to clipboard");
-      } else {
-        toast.success("Sharing disabled");
-      }
-      q.refetch();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function handleDelete() {
     if (!confirm("Delete this critique? This cannot be undone.")) return;
@@ -116,11 +99,11 @@ function CritiquePage() {
             Download PDF
           </button>
           <button
-            onClick={handleShare}
-            disabled={busy || c.status !== "complete"}
+            onClick={() => setShareOpen(true)}
+            disabled={c.status !== "complete"}
             className="px-3 py-2 border border-border rounded-sm text-sm font-medium hover:bg-muted disabled:opacity-50"
           >
-            {c.is_public ? "Sharing on" : "Share"}
+            {c.is_public ? "Sharing…" : "Share"}
           </button>
           <button
             onClick={handleDelete}
@@ -133,17 +116,49 @@ function CritiquePage() {
 
       {c.is_public && c.share_slug && (
         <div className="mb-8 p-3 border border-primary/20 bg-primary/5 rounded-sm text-xs font-mono flex items-center justify-between gap-3">
-          <span>Public link: /c/{c.share_slug}</span>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/c/${c.share_slug}`);
-              toast.success("Copied");
-            }}
-            className="text-primary underline"
-          >
-            Copy
-          </button>
+          <span className="flex items-center gap-3 flex-wrap">
+            <span>Public link: /c/{c.share_slug}</span>
+            {c.has_password && (
+              <span className="px-1.5 py-0.5 bg-primary text-white text-[10px] uppercase tracking-widest">
+                Password
+              </span>
+            )}
+            {c.share_expires_at && (
+              <span className="text-muted-foreground">
+                Expires {new Date(c.share_expires_at).toLocaleString()}
+              </span>
+            )}
+          </span>
+          <span className="flex gap-3 shrink-0">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/c/${c.share_slug}`);
+                toast.success("Copied");
+              }}
+              className="text-primary underline"
+            >
+              Copy
+            </button>
+            <button onClick={() => setShareOpen(true)} className="text-primary underline">
+              Manage
+            </button>
+          </span>
         </div>
+      )}
+
+      {shareOpen && (
+        <ShareSettingsDialog
+          critique={{
+            id: c.id,
+            is_public: c.is_public,
+            share_slug: c.share_slug,
+            share_expires_at: c.share_expires_at,
+            has_password: c.has_password,
+          }}
+          onClose={() => setShareOpen(false)}
+          onChange={() => q.refetch()}
+          submit={(payload) => updateFn({ data: payload })}
+        />
       )}
 
       {c.status === "analyzing" && <AnalyzingState />}
@@ -168,3 +183,295 @@ function CritiquePage() {
     </main>
   );
 }
+
+type ShareCritique = {
+  id: string;
+  is_public: boolean;
+  share_slug: string | null;
+  share_expires_at: string | null;
+  has_password: boolean;
+};
+
+type SharePayload = {
+  id: string;
+  isPublic?: boolean;
+  password?: string | null;
+  expiresAt?: string | null;
+  rotateSlug?: boolean;
+};
+
+function ShareSettingsDialog({
+  critique,
+  onClose,
+  onChange,
+  submit,
+}: {
+  critique: ShareCritique;
+  onClose: () => void;
+  onChange: () => void;
+  submit: (payload: SharePayload) => Promise<unknown>;
+}) {
+  const [isPublic, setIsPublic] = useState(critique.is_public);
+  const [passwordMode, setPasswordMode] = useState<"keep" | "set" | "clear">("keep");
+  const [password, setPassword] = useState("");
+  const [expiryMode, setExpiryMode] = useState<"keep" | "set" | "clear">("keep");
+  const [expiresAt, setExpiresAt] = useState<string>(() => {
+    if (!critique.share_expires_at) return "";
+    // format for datetime-local
+    const d = new Date(critique.share_expires_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    const payload: SharePayload = { id: critique.id, isPublic };
+
+    if (passwordMode === "set") {
+      if (password.length < 4) {
+        toast.error("Password must be at least 4 characters.");
+        return;
+      }
+      payload.password = password;
+    } else if (passwordMode === "clear") {
+      payload.password = null;
+    }
+
+    if (expiryMode === "set") {
+      if (!expiresAt) {
+        toast.error("Pick an expiration date.");
+        return;
+      }
+      const iso = new Date(expiresAt).toISOString();
+      if (new Date(iso).getTime() <= Date.now()) {
+        toast.error("Expiration must be in the future.");
+        return;
+      }
+      payload.expiresAt = iso;
+    } else if (expiryMode === "clear") {
+      payload.expiresAt = null;
+    }
+
+    setSaving(true);
+    try {
+      await submit(payload);
+      toast.success("Share settings updated");
+      onChange();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRevoke() {
+    if (!confirm("Revoke the public link? Anyone with the URL will lose access.")) return;
+    setSaving(true);
+    try {
+      await submit({ id: critique.id, isPublic: false, password: null, expiresAt: null });
+      toast.success("Share revoked");
+      onChange();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRotate() {
+    if (
+      !confirm("Regenerate the share URL? The old link will stop working immediately.")
+    )
+      return;
+    setSaving(true);
+    try {
+      await submit({ id: critique.id, rotateSlug: true });
+      toast.success("New link generated");
+      onChange();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSave}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background border border-border rounded-sm w-full max-w-lg p-6 shadow-2xl"
+      >
+        <div className="flex items-baseline justify-between mb-6">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-1">
+              Share settings
+            </p>
+            <h2 className="font-serif italic text-2xl">Public access</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="font-mono text-xs text-muted-foreground hover:text-primary"
+          >
+            Close
+          </button>
+        </div>
+
+        {/* Public toggle */}
+        <label className="flex items-center justify-between border-b border-border pb-4 mb-4 cursor-pointer">
+          <span>
+            <span className="block text-sm font-medium">Publicly accessible</span>
+            <span className="block text-xs text-muted-foreground">
+              Anyone with the link can view this critique.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="size-4 accent-primary"
+          />
+        </label>
+
+        {/* Password */}
+        <fieldset className="border-b border-border pb-4 mb-4" disabled={!isPublic}>
+          <legend className="text-sm font-medium mb-2">Password protection</legend>
+          <p className="text-xs text-muted-foreground mb-3">
+            {critique.has_password
+              ? "This link currently requires a password."
+              : "No password is set."}
+          </p>
+          <div className="flex flex-col gap-2 font-mono text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="pw"
+                checked={passwordMode === "keep"}
+                onChange={() => setPasswordMode("keep")}
+              />
+              Keep as-is
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="pw"
+                checked={passwordMode === "set"}
+                onChange={() => setPasswordMode("set")}
+              />
+              Set a new password
+            </label>
+            {passwordMode === "set" && (
+              <input
+                type="text"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 4 characters"
+                className="ml-6 border border-border rounded-sm px-2 py-1 bg-white text-sm"
+              />
+            )}
+            {critique.has_password && (
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="pw"
+                  checked={passwordMode === "clear"}
+                  onChange={() => setPasswordMode("clear")}
+                />
+                Remove password
+              </label>
+            )}
+          </div>
+        </fieldset>
+
+        {/* Expiration */}
+        <fieldset className="border-b border-border pb-4 mb-6" disabled={!isPublic}>
+          <legend className="text-sm font-medium mb-2">Expiration</legend>
+          <p className="text-xs text-muted-foreground mb-3">
+            {critique.share_expires_at
+              ? `Currently expires ${new Date(critique.share_expires_at).toLocaleString()}.`
+              : "No expiration set."}
+          </p>
+          <div className="flex flex-col gap-2 font-mono text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="exp"
+                checked={expiryMode === "keep"}
+                onChange={() => setExpiryMode("keep")}
+              />
+              Keep as-is
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="exp"
+                checked={expiryMode === "set"}
+                onChange={() => setExpiryMode("set")}
+              />
+              Set expiration
+            </label>
+            {expiryMode === "set" && (
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="ml-6 border border-border rounded-sm px-2 py-1 bg-white text-sm"
+              />
+            )}
+            {critique.share_expires_at && (
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="exp"
+                  checked={expiryMode === "clear"}
+                  onChange={() => setExpiryMode("clear")}
+                />
+                Never expires
+              </label>
+            )}
+          </div>
+        </fieldset>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-4 py-2 bg-foreground text-background text-sm rounded-sm hover:bg-foreground/90 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          {critique.is_public && critique.share_slug && (
+            <>
+              <button
+                type="button"
+                onClick={handleRotate}
+                disabled={saving}
+                className="px-3 py-2 border border-border text-sm rounded-sm hover:bg-muted disabled:opacity-50"
+              >
+                Regenerate URL
+              </button>
+              <button
+                type="button"
+                onClick={handleRevoke}
+                disabled={saving}
+                className="px-3 py-2 border border-primary/40 text-primary text-sm rounded-sm hover:bg-primary hover:text-white ml-auto disabled:opacity-50"
+              >
+                Revoke access
+              </button>
+            </>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+

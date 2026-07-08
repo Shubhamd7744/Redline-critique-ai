@@ -1,33 +1,63 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import { verifySharePassword } from "./share-password";
 
-export const getPublicCritique = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ slug: z.string().min(4) }).parse(d))
-  .handler(async ({ data }) => {
-    const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-    if (!url || !key) throw new Error("Backend not configured");
+export type PublicCritiqueResult =
+  | { kind: "not_found" }
+  | { kind: "expired"; title: string; expires_at: string }
+  | { kind: "locked"; title: string; error?: string }
+  | {
+      kind: "ok";
+      id: string;
+      title: string;
+      image_path: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rubric: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      issues: any;
+      summary: string | null;
+      overall_score: number | null;
+      status: string;
+      is_public: boolean;
+      share_slug: string | null;
+      share_expires_at: string | null;
+      created_at: string;
+      image_url: string | null;
+    };
 
-    const supabase = createClient<Database>(url, key, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
+export const getPublicCritique = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ slug: z.string().min(4), password: z.string().max(200).optional() }).parse(d),
+  )
+  .handler(async ({ data }): Promise<PublicCritiqueResult> => {
+    // Admin client so we can read password-protected rows and enforce the check in code.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: row, error } = await supabase
+    const { data: row, error } = await supabaseAdmin
       .from("critiques")
-      .select("id, title, image_path, rubric, issues, summary, overall_score, status, is_public, share_slug, created_at")
+      .select(
+        "id, title, image_path, rubric, issues, summary, overall_score, status, is_public, share_slug, share_password_hash, share_expires_at, created_at",
+      )
       .eq("share_slug", data.slug)
       .eq("is_public", true)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) throw new Error("Not found");
+    if (!row) return { kind: "not_found" };
 
-    // Signed URL via admin (safe: only reached for public critiques)
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (row.share_expires_at && new Date(row.share_expires_at).getTime() < Date.now()) {
+      return { kind: "expired", title: row.title, expires_at: row.share_expires_at };
+    }
+
+    if (row.share_password_hash) {
+      if (!data.password) return { kind: "locked", title: row.title };
+      const ok = await verifySharePassword(data.password, row.share_password_hash);
+      if (!ok) return { kind: "locked", title: row.title, error: "Incorrect password." };
+    }
+
     const { data: signed } = await supabaseAdmin.storage
       .from("designs")
       .createSignedUrl(row.image_path, 60 * 60);
 
-    return { ...row, image_url: signed?.signedUrl ?? null };
+    const { share_password_hash: _pw, ...safe } = row;
+    return { kind: "ok", ...safe, image_url: signed?.signedUrl ?? null };
   });

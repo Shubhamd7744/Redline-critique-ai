@@ -25,6 +25,8 @@ export type Database = {
           overall_score: number | null
           project_id: string | null
           rubric: Json | null
+          share_expires_at: string | null
+          share_password_hash: string | null
           share_slug: string | null
           status: string
           summary: string | null
@@ -41,6 +43,8 @@ export type Database = {
           overall_score?: number | null
           project_id?: string | null
           rubric?: Json | null
+          share_expires_at?: string | null
+          share_password_hash?: string | null
           share_slug?: string | null
           status?: string
           summary?: string | null
@@ -57,6 +61,8 @@ export type Database = {
           overall_score?: number | null
           project_id?: string | null
           rubric?: Json | null
+          share_expires_at?: string | null
+          share_password_hash?: string | null
           share_slug?: string | null
           status?: string
           summary?: string | null
