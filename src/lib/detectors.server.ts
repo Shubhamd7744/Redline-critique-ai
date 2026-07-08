@@ -126,8 +126,8 @@ Map to legacy principle: "consistency" (or "accessibility" for cookie/consent fi
 ${JSON_SHAPE}`,
 };
 
-// Pillar weights for the overall score. Sums to 1.
-const PILLAR_WEIGHTS: Record<Pillar, number> = {
+// Default pillar weights (used when a ritual mode doesn't specify its own).
+const DEFAULT_PILLAR_WEIGHTS: Record<Pillar, number> = {
   usability: 0.25,
   accessibility: 0.25,
   visual: 0.2,
