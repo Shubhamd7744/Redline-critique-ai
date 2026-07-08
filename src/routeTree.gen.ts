@@ -10,11 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CSlugRouteImport } from './routes/c.$slug'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects.$projectId'
+import { Route as AuthenticatedCritiquesIdRouteImport } from './routes/_authenticated/critiques.$id'
+import { Route as AuthenticatedCritiquesIdCompareRouteImport } from './routes/_authenticated/critiques.$id.compare'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,31 +32,100 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CSlugRoute = CSlugRouteImport.update({
+  id: '/c/$slug',
+  path: '/c/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProjectsProjectIdRoute =
+  AuthenticatedProjectsProjectIdRouteImport.update({
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCritiquesIdRoute =
+  AuthenticatedCritiquesIdRouteImport.update({
+    id: '/critiques/$id',
+    path: '/critiques/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCritiquesIdCompareRoute =
+  AuthenticatedCritiquesIdCompareRouteImport.update({
+    id: '/compare',
+    path: '/compare',
+    getParentRoute: () => AuthenticatedCritiquesIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/c/$slug': typeof CSlugRoute
+  '/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/critiques/$id/compare': typeof AuthenticatedCritiquesIdCompareRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/c/$slug': typeof CSlugRoute
+  '/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
+  '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/critiques/$id/compare': typeof AuthenticatedCritiquesIdCompareRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/c/$slug': typeof CSlugRoute
+  '/_authenticated/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
+  '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRoute
+  '/_authenticated/critiques/$id/compare': typeof AuthenticatedCritiquesIdCompareRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/c/$slug'
+    | '/critiques/$id'
+    | '/projects/$projectId'
+    | '/critiques/$id/compare'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth'
-  id: '__root__' | '/' | '/auth'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/c/$slug'
+    | '/critiques/$id'
+    | '/projects/$projectId'
+    | '/critiques/$id/compare'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/dashboard'
+    | '/c/$slug'
+    | '/_authenticated/critiques/$id'
+    | '/_authenticated/projects/$projectId'
+    | '/_authenticated/critiques/$id/compare'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CSlugRoute: typeof CSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +151,78 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$slug': {
+      id: '/c/$slug'
+      path: '/c/$slug'
+      fullPath: '/c/$slug'
+      preLoaderRoute: typeof CSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/projects/$projectId': {
+      id: '/_authenticated/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/critiques/$id': {
+      id: '/_authenticated/critiques/$id'
+      path: '/critiques/$id'
+      fullPath: '/critiques/$id'
+      preLoaderRoute: typeof AuthenticatedCritiquesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/critiques/$id/compare': {
+      id: '/_authenticated/critiques/$id/compare'
+      path: '/compare'
+      fullPath: '/critiques/$id/compare'
+      preLoaderRoute: typeof AuthenticatedCritiquesIdCompareRouteImport
+      parentRoute: typeof AuthenticatedCritiquesIdRoute
+    }
   }
 }
 
+interface AuthenticatedCritiquesIdRouteChildren {
+  AuthenticatedCritiquesIdCompareRoute: typeof AuthenticatedCritiquesIdCompareRoute
+}
+
+const AuthenticatedCritiquesIdRouteChildren: AuthenticatedCritiquesIdRouteChildren =
+  {
+    AuthenticatedCritiquesIdCompareRoute: AuthenticatedCritiquesIdCompareRoute,
+  }
+
+const AuthenticatedCritiquesIdRouteWithChildren =
+  AuthenticatedCritiquesIdRoute._addFileChildren(
+    AuthenticatedCritiquesIdRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedCritiquesIdRoute: typeof AuthenticatedCritiquesIdRouteWithChildren
+  AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedCritiquesIdRoute: AuthenticatedCritiquesIdRouteWithChildren,
+  AuthenticatedProjectsProjectIdRoute: AuthenticatedProjectsProjectIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CSlugRoute: CSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
