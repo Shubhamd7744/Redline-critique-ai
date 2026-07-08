@@ -7,6 +7,7 @@ import {
   type RubricScores,
   type Severity,
 } from "@/lib/critique-types";
+import { DecisionLog } from "@/components/decision-log";
 
 export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   const entries = Object.entries(rubric) as [keyof RubricScores, number][];
