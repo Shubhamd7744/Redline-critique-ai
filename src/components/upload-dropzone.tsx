@@ -109,7 +109,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       setProgress(100);
 
       router.navigate({ to: "/critiques/$id", params: { id } });
-      analyze({ data: { id } }).catch((e) => {
+      analyze({ data: { id, mode } }).catch((e) => {
         console.error(e);
         toast.error(`Analysis failed: ${e.message ?? "unknown"}`);
       });
