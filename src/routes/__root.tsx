@@ -70,17 +70,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Redline — AI design critique" },
+      { title: "Redline Critique — AI design critique" },
       {
         name: "description",
         content:
-          "Upload your mockups for a senior-level AI redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles.",
+          "Redline Critique delivers a senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles.",
       },
-      { name: "author", content: "Redline" },
-      { property: "og:title", content: "Redline — AI design critique" },
-      { property: "og:description", content: "A senior-level AI redline of your UX/UI, grounded in real design principles." },
+      { name: "author", content: "Redline Critique" },
+      { property: "og:title", content: "Redline Critique — AI design critique" },
+      { property: "og:description", content: "Senior-level AI redlines of your UX/UI, grounded in real design principles." },
+      { property: "og:site_name", content: "Redline Critique" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Redline Critique — AI design critique" },
+      { name: "twitter:description", content: "Senior-level AI redlines of your UX/UI, grounded in real design principles." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
