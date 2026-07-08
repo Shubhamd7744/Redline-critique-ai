@@ -18,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/critiques/$id")({
 function CritiquePage() {
   const { id } = Route.useParams();
   const fn = useServerFn(getCritique);
-  const shareFn = useServerFn(toggleShare);
+  const updateFn = useServerFn(updateShareSettings);
   const deleteFn = useServerFn(deleteCritique);
-  const [busy, setBusy] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["critique", id],
@@ -30,25 +30,6 @@ function CritiquePage() {
       return d && d.status === "analyzing" ? 2000 : false;
     },
   });
-
-  async function handleShare() {
-    setBusy(true);
-    try {
-      const r = await shareFn({ data: { id } });
-      if (r.is_public && r.share_slug) {
-        const url = `${window.location.origin}/c/${r.share_slug}`;
-        await navigator.clipboard.writeText(url);
-        toast.success("Public link copied to clipboard");
-      } else {
-        toast.success("Sharing disabled");
-      }
-      q.refetch();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function handleDelete() {
     if (!confirm("Delete this critique? This cannot be undone.")) return;
