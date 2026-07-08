@@ -71,22 +71,22 @@ const JSON_SHAPE = `Respond ONLY with a JSON object of this exact shape (no pros
   "score": 0-10,
   "findings": [
     {
-      "criterion": "string (e.g. nielsen.h5, wcag.2.5.8, hax.g3)",
+      "criterion_id": "namespace.id (e.g. nielsen.h5, wcag.2.5.8, hax.g3) — required, lowercase, dot-separated",
       "principle": "hierarchy" | "contrast" | "typography" | "spacing" | "accessibility" | "consistency",
       "severity": "critical" | "suggested" | "polish",
       "title": "short specific finding (max 80 chars)",
-      "description": "what is wrong and why (cite the principle)",
-      "fix": "concrete direction (not a prescriptive solution)",
-      "evidence": "the measured value or observed thing",
-      "source": "canonical URL for the framework/criterion",
+      "observation": "what you see, neutral and descriptive — no interpretation",
+      "evidence": "the measured value or concrete artefact (e.g. '3.8:1 contrast on 14px label', '20x20 tap target')",
+      "user_impact": "who is harmed and how — this grounds the severity",
+      "fix_suggestion": "a direction the designer can take, not a prescriptive solution",
+      "source_url": "https://... canonical framework URL for this criterion",
       "confidence": 0.0-1.0,
       "x": 0.0-1.0,
       "y": 0.0-1.0
     }
   ]
 }
-Only include a finding when you can name the criterion and point to evidence in the image.
-Return an empty findings array rather than inventing findings. Cap at 6 findings.`;
+Every finding MUST include all four slots (observation, evidence, user_impact, fix_suggestion), a criterion_id, and an https source_url. Omit any finding you cannot fully ground. Return an empty findings array rather than inventing findings. Cap at 6 findings.`;
 
 const PILLAR_PROMPTS: Record<Pillar, string> = {
   usability: `You are auditing this design against Nielsen Norman Group's 10 Usability Heuristics and Norman's affordance/signifier/feedback/mapping principles.
