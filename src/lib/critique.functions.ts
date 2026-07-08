@@ -267,6 +267,75 @@ export const toggleShare = createServerFn({ method: "POST" })
     return { is_public: nextPublic, share_slug: slug };
   });
 
+export const updateShareSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        isPublic: z.boolean().optional(),
+        password: z.union([z.string().min(4).max(200), z.null()]).optional(),
+        expiresAt: z.union([z.string().datetime(), z.null()]).optional(),
+        rotateSlug: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("critiques")
+      .select("share_slug, is_public")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !row) throw new Error("Not found");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const update: Record<string, any> = {};
+
+    if (typeof data.isPublic === "boolean") {
+      update.is_public = data.isPublic;
+      if (data.isPublic && !row.share_slug) {
+        update.share_slug = crypto.randomUUID().slice(0, 10);
+      }
+    }
+
+    if (data.rotateSlug) {
+      update.share_slug = crypto.randomUUID().slice(0, 10);
+    }
+
+    if (data.password !== undefined) {
+      if (data.password === null) {
+        update.share_password_hash = null;
+      } else {
+        const { hashSharePassword } = await import("./share-password");
+        update.share_password_hash = await hashSharePassword(data.password);
+      }
+    }
+
+    if (data.expiresAt !== undefined) {
+      update.share_expires_at = data.expiresAt;
+    }
+
+    const { error: uErr } = await context.supabase
+      .from("critiques")
+      .update(update)
+      .eq("id", data.id);
+    if (uErr) throw new Error(uErr.message);
+
+    // Return the updated summary (never the hash)
+    const { data: updated } = await context.supabase
+      .from("critiques")
+      .select("is_public, share_slug, share_expires_at, share_password_hash")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    return {
+      is_public: updated?.is_public ?? false,
+      share_slug: updated?.share_slug ?? null,
+      share_expires_at: updated?.share_expires_at ?? null,
+      has_password: !!updated?.share_password_hash,
+    };
+  });
+
 export const deleteCritique = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
