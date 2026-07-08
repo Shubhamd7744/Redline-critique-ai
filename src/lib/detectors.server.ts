@@ -32,14 +32,18 @@ export type Pillar =
 
 export interface DetectorFinding {
   pillar: Pillar;
-  criterion: string; // e.g. "nielsen.h5", "wcag.2.5.8"
+  criterion_id: string; // e.g. "nielsen.h5", "wcag.2.5.8" (validated)
   principle: Principle; // legacy mapping for existing UI
   severity: Severity;
   title: string;
-  description: string;
-  fix: string;
-  evidence?: string; // measured value / observation snippet
-  source?: string; // canonical framework URL
+
+  // Four-slot schema
+  observation: string;
+  evidence: string;
+  user_impact: string;
+  fix_suggestion: string;
+
+  source_url?: string; // validated https URL
   confidence: number; // 0..1
   x: number; // 0..1
   y: number; // 0..1
