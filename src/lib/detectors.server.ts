@@ -363,8 +363,16 @@ export async function runDetectors(
     severity: f.severity,
     principle: f.principle,
     title: f.title,
-    description: f.description,
-    fix: f.fix,
+    observation: f.observation,
+    evidence: f.evidence,
+    user_impact: f.user_impact,
+    fix_suggestion: f.fix_suggestion,
+    criterion_id: f.criterion_id,
+    source_url: f.source_url,
+    confidence: f.confidence,
+    // Legacy mirrors for existing views
+    description: f.observation,
+    fix: f.fix_suggestion,
     x: f.x,
     y: f.y,
   }));
