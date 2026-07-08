@@ -236,7 +236,8 @@ async function runDetector(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface MergedCritique extends CritiquePayload {
-  pillar_scores: Record<Pillar, number>;
+  mode: RitualMode;
+  pillar_scores: Partial<Record<Pillar, number>>;
   detector_findings: DetectorFinding[];
   detector_errors: { pillar: Pillar; error: string }[];
 }
@@ -244,15 +245,10 @@ export interface MergedCritique extends CritiquePayload {
 export async function runDetectors(
   imageUrl: string,
   apiKey: string,
+  mode: RitualMode = "design_review",
 ): Promise<MergedCritique> {
-  const pillars: Pillar[] = [
-    "usability",
-    "accessibility",
-    "visual",
-    "ia_content",
-    "ai_native",
-    "ethics",
-  ];
+  const spec = RITUAL_MODES[mode];
+  const pillars = spec.pillars as Pillar[];
 
   const settled = await Promise.allSettled(
     pillars.map((p) => runDetector(p, imageUrl, apiKey)),
@@ -284,35 +280,51 @@ export async function runDetectors(
   });
   const topFindings = allFindings.slice(0, 12);
 
-  // Legacy rubric per principle — take the min of contributing pillar scores
-  // for principles that map to multiple pillars (so a bad pillar drags the
-  // score down instead of being averaged away).
-  const principleScores: Record<Principle, number[]> = {
-    hierarchy: [results[0].score, results[3].score], // usability + ia
-    contrast: [results[1].score], // a11y
-    typography: [results[2].score], // visual
-    spacing: [results[2].score],
-    accessibility: [results[1].score],
-    consistency: [results[2].score, results[4].score, results[5].score],
+  // Lookup: pillar → score (only for pillars that ran)
+  const scoreOf = new Map<Pillar, number>();
+  for (const r of results) scoreOf.set(r.pillar, r.score);
+
+  // Legacy rubric per principle. Only include pillars that ran; fall back to
+  // a neutral 7 when a principle has no contributing pillar in this mode
+  // (so single-pillar rituals like Heuristic Eval don't leave the rubric
+  // half-empty in the existing UI).
+  const contribs: Record<Principle, Pillar[]> = {
+    hierarchy: ["usability", "ia_content"],
+    contrast: ["accessibility"],
+    typography: ["visual"],
+    spacing: ["visual"],
+    accessibility: ["accessibility"],
+    consistency: ["visual", "ai_native", "ethics"],
   };
-  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 5);
+  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 7);
+  const rubricScore = (principle: Principle) => {
+    const xs = contribs[principle]
+      .map((p) => scoreOf.get(p))
+      .filter((v): v is number => typeof v === "number");
+    return clamp(avg(xs), 0, 10);
+  };
   const rubric = {
-    hierarchy: clamp(avg(principleScores.hierarchy), 0, 10),
-    contrast: clamp(avg(principleScores.contrast), 0, 10),
-    typography: clamp(avg(principleScores.typography), 0, 10),
-    spacing: clamp(avg(principleScores.spacing), 0, 10),
-    accessibility: clamp(avg(principleScores.accessibility), 0, 10),
-    consistency: clamp(avg(principleScores.consistency), 0, 10),
+    hierarchy: rubricScore("hierarchy"),
+    contrast: rubricScore("contrast"),
+    typography: rubricScore("typography"),
+    spacing: rubricScore("spacing"),
+    accessibility: rubricScore("accessibility"),
+    consistency: rubricScore("consistency"),
   };
 
-  // Weighted overall
+  // Weighted overall — mode weights over pillars that ran, renormalized.
+  const rawWeights = pillars.map((p) => ({
+    pillar: p,
+    score: scoreOf.get(p) ?? 5,
+    weight: spec.weights[p] ?? DEFAULT_PILLAR_WEIGHTS[p],
+  }));
+  const weightSum = rawWeights.reduce((a, w) => a + w.weight, 0) || 1;
   const overall_score = clamp(
-    results.reduce((acc, r) => acc + r.score * PILLAR_WEIGHTS[r.pillar], 0),
+    rawWeights.reduce((acc, w) => acc + w.score * (w.weight / weightSum), 0),
     0,
     10,
   );
 
-  // Legacy issues (kept for existing UI)
   const issues: Issue[] = topFindings.map((f, idx) => ({
     id: String(idx + 1).padStart(2, "0"),
     severity: f.severity,
@@ -324,25 +336,22 @@ export async function runDetectors(
     y: f.y,
   }));
 
+  const okCount = results.filter((r) => r.ok).length;
   const critical = topFindings.filter((f) => f.severity === "critical").length;
+  const noun = spec.pillars.length === 1 ? "pillar" : "pillars";
   const summary = critical
-    ? `${critical} critical issue${critical === 1 ? "" : "s"} across ${results.filter((r) => r.ok).length} audited pillars.`
-    : `No critical issues found across ${results.filter((r) => r.ok).length} audited pillars.`;
+    ? `${critical} critical issue${critical === 1 ? "" : "s"} across ${okCount} audited ${noun} (${spec.label}).`
+    : `No critical issues across ${okCount} audited ${noun} (${spec.label}).`;
 
-  const pillar_scores: Record<Pillar, number> = {
-    usability: results[0].score,
-    accessibility: results[1].score,
-    visual: results[2].score,
-    ia_content: results[3].score,
-    ai_native: results[4].score,
-    ethics: results[5].score,
-  };
+  const pillar_scores: Partial<Record<Pillar, number>> = {};
+  for (const r of results) pillar_scores[r.pillar] = r.score;
 
   const detector_errors = results
     .filter((r) => !r.ok)
     .map((r) => ({ pillar: r.pillar, error: r.error ?? "unknown" }));
 
   return {
+    mode,
     rubric,
     issues,
     summary,
