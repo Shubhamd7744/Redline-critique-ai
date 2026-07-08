@@ -3,10 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getCritique, toggleShare, deleteCritique } from "@/lib/critique.functions";
+import { getCritique, updateShareSettings, deleteCritique } from "@/lib/critique.functions";
 import { ResultsView, AnalyzingState } from "@/components/critique-view";
 import type { CritiquePayload } from "@/lib/critique-types";
 import { downloadCritiquePdf } from "@/lib/critique-pdf";
+
+
 
 export const Route = createFileRoute("/_authenticated/critiques/$id")({
   head: () => ({ meta: [{ title: "Critique — Redline" }, { name: "robots", content: "noindex" }] }),
