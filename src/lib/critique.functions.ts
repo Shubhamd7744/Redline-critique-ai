@@ -128,33 +128,6 @@ export const uploadCritique = createServerFn({ method: "POST" })
     return { id: row.id };
   });
 
-const SYSTEM_PROMPT = `You are a senior UX/UI design director doing a rigorous, opinionated redline of a design mockup.
-
-Grade the design on six principles, each 0.0-10.0:
-- hierarchy: visual hierarchy and information priority
-- contrast: color contrast and legibility
-- typography: type scale, rhythm, pairing
-- spacing: alignment, rhythm, whitespace
-- accessibility: WCAG contrast, tap targets, focus states
-- consistency: components, patterns, styles
-
-Also produce 4-8 prioritized issues. Each issue has:
-- severity: "critical" (breaks core usability/WCAG), "suggested" (meaningful improvement), "polish" (nice-to-have)
-- principle: one of the six above
-- title: short, specific (max 80 chars)
-- description: what's wrong and why
-- fix: concrete, actionable instruction
-- x, y: normalized coordinates 0-1 of where on the image the issue lives (0,0 top-left; 1,1 bottom-right)
-
-Respond ONLY with a JSON object matching this exact shape:
-{
-  "rubric": { "hierarchy": n, "contrast": n, "typography": n, "spacing": n, "accessibility": n, "consistency": n },
-  "issues": [{ "id": "01", "severity": "...", "principle": "...", "title": "...", "description": "...", "fix": "...", "x": 0.0, "y": 0.0 }],
-  "summary": "one-sentence overall verdict",
-  "overall_score": n
-}
-
-Be direct and specific. No generic advice. Ground every issue in a real principle.`;
 
 export const analyzeCritique = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
