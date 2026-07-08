@@ -15,7 +15,12 @@
 
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
-import { RITUAL_MODES, type RitualMode } from "./critique-types";
+import {
+  RITUAL_MODES,
+  validateCriterionId,
+  validateSourceUrl,
+  type RitualMode,
+} from "./critique-types";
 import type { CritiquePayload, Issue, Principle, Severity } from "./critique-types";
 
 // ─────────────────────────────────────────────────────────────────────────────
