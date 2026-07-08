@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { getCritique, toggleShare, deleteCritique } from "@/lib/critique.functions";
 import { ResultsView, AnalyzingState } from "@/components/critique-view";
 import type { CritiquePayload } from "@/lib/critique-types";
+import { downloadCritiquePdf } from "@/lib/critique-pdf";
 
 export const Route = createFileRoute("/_authenticated/critiques/$id")({
   head: () => ({ meta: [{ title: "Critique — Redline" }, { name: "robots", content: "noindex" }] }),
