@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
+import { RITUAL_MODES, RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
 
 type Phase = "idle" | "reading" | "uploading" | "finalizing" | "error";
 
@@ -34,6 +35,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [mode, setMode] = useState<RitualMode>("design_review");
   const tickRef = useRef<number | null>(null);
 
   const busy = phase === "reading" || phase === "uploading" || phase === "finalizing";
@@ -107,7 +109,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       setProgress(100);
 
       router.navigate({ to: "/critiques/$id", params: { id } });
-      analyze({ data: { id } }).catch((e) => {
+      analyze({ data: { id, mode } }).catch((e) => {
         console.error(e);
         toast.error(`Analysis failed: ${e.message ?? "unknown"}`);
       });
@@ -231,38 +233,96 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
   }
 
   // ---------- Idle state ----------
+  const selectedSpec = RITUAL_MODES[mode];
   return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        const f = e.dataTransfer.files?.[0];
-        if (f) handleFile(f);
-      }}
-      onClick={() => inputRef.current?.click()}
-      className={`group relative border-2 border-dashed rounded-sm h-[360px] flex flex-col items-center justify-center bg-white/50 transition-all cursor-pointer ${
-        dragOver ? "border-primary bg-white" : "border-border hover:border-primary/40 hover:bg-white"
-      }`}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
-      <div className="flex flex-col items-center gap-4 text-center p-8">
-        <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
-          <div className="size-2 bg-primary rounded-full" />
+    <div className="space-y-4">
+      <div>
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-primary">
+            Ritual · {selectedSpec.pillars.length} pillar
+            {selectedSpec.pillars.length === 1 ? "" : "s"}
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            {selectedSpec.short}
+          </p>
         </div>
-        <div>
-          <p className="font-medium text-lg">Drop mockup to initiate critique</p>
-          <p className="text-sm text-muted-foreground">PNG, JPG or WebP · max 20MB</p>
+        <div
+          role="radiogroup"
+          aria-label="Critique ritual mode"
+          className="grid grid-cols-2 md:grid-cols-3 gap-2"
+        >
+          {RITUAL_MODE_ORDER.map((m) => {
+            const spec = RITUAL_MODES[m];
+            const active = m === mode;
+            return (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMode(m);
+                }}
+                className={`text-left px-3 py-2.5 border rounded-sm transition-colors ${
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-white/50 hover:border-primary/40 hover:bg-white"
+                }`}
+              >
+                <p
+                  className={`text-sm font-medium leading-tight ${
+                    active ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {spec.label}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                  {spec.short}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+          {selectedSpec.description}
+        </p>
+      </div>
+
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) handleFile(f);
+        }}
+        onClick={() => inputRef.current?.click()}
+        className={`group relative border-2 border-dashed rounded-sm h-[320px] flex flex-col items-center justify-center bg-white/50 transition-all cursor-pointer ${
+          dragOver ? "border-primary bg-white" : "border-border hover:border-primary/40 hover:bg-white"
+        }`}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        />
+        <div className="flex flex-col items-center gap-4 text-center p-8">
+          <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
+            <div className="size-2 bg-primary rounded-full" />
+          </div>
+          <div>
+            <p className="font-medium text-lg">Drop mockup to initiate critique</p>
+            <p className="text-sm text-muted-foreground">
+              PNG, JPG or WebP · max 20MB · {selectedSpec.label}
+            </p>
+          </div>
         </div>
       </div>
     </div>
