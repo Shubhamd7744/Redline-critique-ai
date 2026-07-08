@@ -85,7 +85,12 @@ export const getCritique = createServerFn({ method: "GET" })
       .from("designs")
       .createSignedUrl(row.image_path, 60 * 60);
 
-    return { ...row, image_url: signed?.signedUrl ?? null };
+    const { share_password_hash, ...safe } = row;
+    return {
+      ...safe,
+      has_password: !!share_password_hash,
+      image_url: signed?.signedUrl ?? null,
+    };
   });
 
 export const uploadCritique = createServerFn({ method: "POST" })
