@@ -170,7 +170,10 @@ function PublicCritiquePage() {
           }}
           imageUrl={c.image_url}
           title={c.title}
+          critiqueId={c.id}
+          canEdit={false}
         />
+
       </main>
     </Shell>
   );
