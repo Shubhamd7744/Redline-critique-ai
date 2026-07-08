@@ -21,6 +21,7 @@ function fromB64(s: string): Uint8Array {
 }
 
 async function derive(password: string, salt: Uint8Array, iterations: number): Promise<string> {
+  const saltBuf = salt.buffer.slice(salt.byteOffset, salt.byteOffset + salt.byteLength) as ArrayBuffer;
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password),
@@ -29,7 +30,7 @@ async function derive(password: string, salt: Uint8Array, iterations: number): P
     ["deriveBits"],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+    { name: "PBKDF2", hash: "SHA-256", salt: saltBuf, iterations },
     key,
     KEY_BITS,
   );
