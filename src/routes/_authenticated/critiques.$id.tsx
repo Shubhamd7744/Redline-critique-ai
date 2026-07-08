@@ -178,6 +178,13 @@ function CritiquePage() {
           }}
           imageUrl={c.image_url}
           title={c.title}
+          critiqueId={c.id}
+          canEdit
+          shareUrl={
+            c.is_public && c.share_slug
+              ? `${typeof window !== "undefined" ? window.location.origin : ""}/c/${c.share_slug}`
+              : undefined
+          }
         />
       )}
     </main>

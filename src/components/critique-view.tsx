@@ -7,6 +7,7 @@ import {
   type RubricScores,
   type Severity,
 } from "@/lib/critique-types";
+import { DecisionLog } from "@/components/decision-log";
 
 export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   const entries = Object.entries(rubric) as [keyof RubricScores, number][];
@@ -178,10 +179,16 @@ export function ResultsView({
   payload,
   imageUrl,
   title,
+  critiqueId,
+  canEdit = false,
+  shareUrl,
 }: {
   payload: CritiquePayload;
   imageUrl: string;
   title: string;
+  critiqueId?: string;
+  canEdit?: boolean;
+  shareUrl?: string;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   return (
@@ -215,6 +222,17 @@ export function ResultsView({
           </div>
           <RubricPanel rubric={payload.rubric} />
           <IssueList issues={payload.issues} activeId={activeId} onSelect={setActiveId} />
+          {critiqueId && (
+            <DecisionLog
+              critiqueId={critiqueId}
+              issues={payload.issues}
+              canEdit={canEdit}
+              title={title}
+              summary={payload.summary ?? ""}
+              overallScore={payload.overall_score}
+              shareUrl={shareUrl}
+            />
+          )}
         </div>
       </div>
     </section>

@@ -79,6 +79,53 @@ export type Database = {
           },
         ]
       }
+      finding_decisions: {
+        Row: {
+          created_at: string
+          critique_id: string
+          decided_by: string
+          decision: Database["public"]["Enums"]["finding_decision"]
+          decision_note: string | null
+          due_date: string | null
+          finding_id: string
+          id: string
+          owner: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          critique_id: string
+          decided_by: string
+          decision: Database["public"]["Enums"]["finding_decision"]
+          decision_note?: string | null
+          due_date?: string | null
+          finding_id: string
+          id?: string
+          owner?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          critique_id?: string
+          decided_by?: string
+          decision?: Database["public"]["Enums"]["finding_decision"]
+          decision_note?: string | null
+          due_date?: string | null
+          finding_id?: string
+          id?: string
+          owner?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finding_decisions_critique_id_fkey"
+            columns: ["critique_id"]
+            isOneToOne: false
+            referencedRelation: "critiques"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -132,7 +179,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      finding_decision: "accepted" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -259,6 +306,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      finding_decision: ["accepted", "rejected"],
+    },
   },
 } as const
