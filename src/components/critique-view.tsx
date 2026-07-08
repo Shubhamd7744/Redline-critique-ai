@@ -46,18 +46,32 @@ export function IssueList({
   issues,
   activeId,
   onSelect,
+  scheme = "severity",
 }: {
   issues: Issue[];
   activeId: string | null;
   onSelect: (id: string | null) => void;
+  scheme?: PriorityScheme;
 }) {
+  const spec = PRIORITY_SCHEMES[scheme];
+  const decorated = useMemo(
+    () =>
+      issues
+        .map((issue, originalIdx) => ({
+          issue,
+          originalIdx,
+          badge: spec.badgeFor(issue),
+        }))
+        .sort((a, b) => a.badge.rank - b.badge.rank),
+    [issues, spec],
+  );
   return (
     <div>
       <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-        Issue Log
+        Issue Log · {spec.label}
       </h3>
       <div className="space-y-4">
-        {issues.map((issue, idx) => {
+        {decorated.map(({ issue, originalIdx, badge }) => {
           const active = activeId === issue.id;
           const isCritical = issue.severity === "critical";
           return (
@@ -71,12 +85,13 @@ export function IssueList({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span
-                  className={`px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase ${SEVERITY_STYLES[issue.severity]}`}
+                  title={badge.hint}
+                  className={`px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase ${badgeClass(badge.tone)}`}
                 >
-                  {SEVERITY_LABEL[issue.severity]}
+                  {badge.label}
                 </span>
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  #{String(idx + 1).padStart(2, "0")} {PRINCIPLE_LABELS[issue.principle] ?? issue.principle}
+                  #{String(originalIdx + 1).padStart(2, "0")} {PRINCIPLE_LABELS[issue.principle] ?? issue.principle}
                 </span>
                 {issue.criterion_id && (
                   <span className="text-[10px] font-mono text-muted-foreground/80 ml-auto">
