@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
+import { RITUAL_MODES, RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
 
 type Phase = "idle" | "reading" | "uploading" | "finalizing" | "error";
 
