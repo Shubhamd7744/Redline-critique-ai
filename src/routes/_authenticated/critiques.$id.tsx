@@ -92,6 +92,30 @@ function CritiquePage() {
         </div>
         <div className="flex gap-2 shrink-0">
           <button
+            onClick={async () => {
+              if (c.status !== "complete" || !c.image_url || !c.rubric || !c.issues) return;
+              try {
+                await downloadCritiquePdf({
+                  payload: {
+                    rubric: c.rubric as unknown as CritiquePayload["rubric"],
+                    issues: c.issues as unknown as CritiquePayload["issues"],
+                    summary: c.summary ?? "",
+                    overall_score: Number(c.overall_score ?? 0),
+                  },
+                  imageUrl: c.image_url,
+                  title: c.title,
+                  createdAt: c.created_at,
+                });
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "PDF export failed");
+              }
+            }}
+            disabled={c.status !== "complete"}
+            className="px-3 py-2 border border-border rounded-sm text-sm font-medium hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50"
+          >
+            Download PDF
+          </button>
+          <button
             onClick={handleShare}
             disabled={busy || c.status !== "complete"}
             className="px-3 py-2 border border-border rounded-sm text-sm font-medium hover:bg-muted disabled:opacity-50"
