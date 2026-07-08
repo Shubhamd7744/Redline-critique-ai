@@ -163,6 +163,12 @@ const PRINCIPLES: Principle[] = [
 
 const SEVERITIES: Severity[] = ["critical", "suggested", "polish"];
 
+const str = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return t ? t : null;
+};
+
 function coerceFinding(raw: unknown, pillar: Pillar): DetectorFinding | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -174,21 +180,39 @@ function coerceFinding(raw: unknown, pillar: Pillar): DetectorFinding | null {
   const severity = SEVERITIES.includes(r.severity as Severity)
     ? (r.severity as Severity)
     : "suggested";
-  const title = typeof r.title === "string" ? r.title.slice(0, 120) : null;
-  const description = typeof r.description === "string" ? r.description : null;
-  const fix = typeof r.fix === "string" ? r.fix : null;
-  if (!title || !description || !fix) return null;
+
+  const title = str(r.title)?.slice(0, 120) ?? null;
+
+  // Four required slots. Fall back to legacy `description` / `fix` when the
+  // model uses the old names, so we don't drop findings during rollout.
+  const observation = str(r.observation) ?? str(r.description);
+  const evidence = str(r.evidence);
+  const user_impact = str(r.user_impact) ?? str(r.impact);
+  const fix_suggestion = str(r.fix_suggestion) ?? str(r.fix);
+
+  // Reject any finding that fails to fill the four analytical slots — this
+  // is the whole point of the schema. No slot, no finding.
+  if (!title || !observation || !evidence || !user_impact || !fix_suggestion) {
+    return null;
+  }
+
+  const criterion_id = validateCriterionId(
+    r.criterion_id ?? r.criterion,
+    `${pillar}.unspecified`,
+  );
+  const source_url = validateSourceUrl(r.source_url ?? r.source);
 
   return {
     pillar,
-    criterion: typeof r.criterion === "string" ? r.criterion : `${pillar}.unspecified`,
+    criterion_id,
     principle,
     severity,
     title,
-    description,
-    fix,
-    evidence: typeof r.evidence === "string" ? r.evidence : undefined,
-    source: typeof r.source === "string" ? r.source : undefined,
+    observation,
+    evidence,
+    user_impact,
+    fix_suggestion,
+    source_url,
     confidence: clamp(Number(r.confidence ?? 0.7), 0, 1),
     x: clamp(Number(r.x ?? 0.5), 0.02, 0.98),
     y: clamp(Number(r.y ?? 0.5), 0.02, 0.98),
