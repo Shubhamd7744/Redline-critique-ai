@@ -18,11 +18,8 @@ export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   // detector_errors from the merged detector run). Only display keys whose
   // value coerces to a finite number.
   const entries = (Object.entries(rubric) as [keyof RubricScores, unknown][])
-    .map(([k, raw]) => {
-      const n = typeof raw === "number" ? raw : Number(raw);
-      return { k, n, valid: Number.isFinite(n) };
-    })
-    .filter((e) => e.valid);
+    .filter(([, raw]) => typeof raw === "number" && Number.isFinite(raw))
+    .map(([k, raw]) => ({ k, n: raw as number }));
   return (
     <div>
       <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
