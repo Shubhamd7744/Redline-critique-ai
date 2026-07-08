@@ -167,7 +167,6 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !row) throw new Error("Critique not found");
 
-    // Signed URL for the AI to fetch
     const { data: signed, error: sErr } = await context.supabase.storage
       .from("designs")
       .createSignedUrl(row.image_path, 60 * 10);
@@ -177,60 +176,34 @@ export const analyzeCritique = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
 
     try {
-      const gateway = createLovableAiGatewayProvider(apiKey);
-      const model = gateway("google/gemini-3-flash-preview");
+      const { runDetectors } = await import("./detectors.server");
+      const merged = await runDetectors(signed.signedUrl, apiKey);
 
-      const result = await generateText({
-        model,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: SYSTEM_PROMPT },
-              { type: "image", image: new URL(signed.signedUrl) },
-            ],
-          },
-        ],
-      });
-
-      const text = result.text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Model did not return JSON");
-      const parsed = JSON.parse(jsonMatch[0]) as CritiquePayload;
-
-      // Basic normalization
-      const clamp = (n: number) => Math.max(0, Math.min(10, Number(n) || 0));
-      parsed.rubric = {
-        hierarchy: clamp(parsed.rubric.hierarchy),
-        contrast: clamp(parsed.rubric.contrast),
-        typography: clamp(parsed.rubric.typography),
-        spacing: clamp(parsed.rubric.spacing),
-        accessibility: clamp(parsed.rubric.accessibility),
-        consistency: clamp(parsed.rubric.consistency),
-      };
-      parsed.overall_score = clamp(parsed.overall_score);
-      parsed.issues = (parsed.issues ?? []).slice(0, 12).map((i, idx) => ({
-        ...i,
-        id: i.id ?? String(idx + 1).padStart(2, "0"),
-        x: Math.max(0.02, Math.min(0.98, Number(i.x) || 0.5)),
-        y: Math.max(0.02, Math.min(0.98, Number(i.y) || 0.5)),
-      }));
+      if (merged.detector_errors.length === 6) {
+        throw new Error(
+          `All detectors failed. First error: ${merged.detector_errors[0].error}`,
+        );
+      }
 
       const { error: updErr } = await context.supabase
         .from("critiques")
         .update({
           status: "complete",
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rubric: parsed.rubric as any,
+          rubric: {
+            ...merged.rubric,
+            pillar_scores: merged.pillar_scores,
+            detector_errors: merged.detector_errors,
+          } as any,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          issues: parsed.issues as any,
-          summary: parsed.summary,
-          overall_score: parsed.overall_score,
+          issues: merged.detector_findings as any,
+          summary: merged.summary,
+          overall_score: merged.overall_score,
         })
         .eq("id", data.id);
       if (updErr) throw new Error(updErr.message);
 
-      return { ok: true };
+      return { ok: true, pillar_scores: merged.pillar_scores };
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       await context.supabase
