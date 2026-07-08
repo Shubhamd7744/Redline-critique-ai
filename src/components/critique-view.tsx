@@ -71,14 +71,55 @@ export function IssueList({
                 <span className="text-[10px] font-mono text-muted-foreground">
                   #{String(idx + 1).padStart(2, "0")} {PRINCIPLE_LABELS[issue.principle] ?? issue.principle}
                 </span>
+                {issue.criterion_id && (
+                  <span className="text-[10px] font-mono text-muted-foreground/80 ml-auto">
+                    {issue.source_url ? (
+                      <a
+                        href={issue.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="underline decoration-dotted hover:text-foreground"
+                      >
+                        {issue.criterion_id}
+                      </a>
+                    ) : (
+                      issue.criterion_id
+                    )}
+                  </span>
+                )}
               </div>
               <p className="text-sm font-medium mb-1">{issue.title}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-2">{issue.description}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                {issue.observation ?? issue.description}
+              </p>
+              {issue.evidence && (
+                <div className="mb-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
+                    Evidence
+                  </p>
+                  <p className="text-xs text-foreground/90 leading-relaxed font-mono">
+                    {issue.evidence}
+                  </p>
+                </div>
+              )}
+              {issue.user_impact && (
+                <div className="mb-2">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
+                    User impact
+                  </p>
+                  <p className="text-xs text-foreground/90 leading-relaxed">
+                    {issue.user_impact}
+                  </p>
+                </div>
+              )}
               <div className="pt-2 border-t border-border/60">
                 <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">
                   Fix
                 </p>
-                <p className="text-xs text-foreground leading-relaxed">{issue.fix}</p>
+                <p className="text-xs text-foreground leading-relaxed">
+                  {issue.fix_suggestion ?? issue.fix}
+                </p>
               </div>
             </button>
           );

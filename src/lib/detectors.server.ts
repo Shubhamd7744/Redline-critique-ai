@@ -15,7 +15,12 @@
 
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
-import { RITUAL_MODES, type RitualMode } from "./critique-types";
+import {
+  RITUAL_MODES,
+  validateCriterionId,
+  validateSourceUrl,
+  type RitualMode,
+} from "./critique-types";
 import type { CritiquePayload, Issue, Principle, Severity } from "./critique-types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,14 +37,18 @@ export type Pillar =
 
 export interface DetectorFinding {
   pillar: Pillar;
-  criterion: string; // e.g. "nielsen.h5", "wcag.2.5.8"
+  criterion_id: string; // e.g. "nielsen.h5", "wcag.2.5.8" (validated)
   principle: Principle; // legacy mapping for existing UI
   severity: Severity;
   title: string;
-  description: string;
-  fix: string;
-  evidence?: string; // measured value / observation snippet
-  source?: string; // canonical framework URL
+
+  // Four-slot schema
+  observation: string;
+  evidence: string;
+  user_impact: string;
+  fix_suggestion: string;
+
+  source_url?: string; // validated https URL
   confidence: number; // 0..1
   x: number; // 0..1
   y: number; // 0..1
@@ -62,22 +71,22 @@ const JSON_SHAPE = `Respond ONLY with a JSON object of this exact shape (no pros
   "score": 0-10,
   "findings": [
     {
-      "criterion": "string (e.g. nielsen.h5, wcag.2.5.8, hax.g3)",
+      "criterion_id": "namespace.id (e.g. nielsen.h5, wcag.2.5.8, hax.g3) — required, lowercase, dot-separated",
       "principle": "hierarchy" | "contrast" | "typography" | "spacing" | "accessibility" | "consistency",
       "severity": "critical" | "suggested" | "polish",
       "title": "short specific finding (max 80 chars)",
-      "description": "what is wrong and why (cite the principle)",
-      "fix": "concrete direction (not a prescriptive solution)",
-      "evidence": "the measured value or observed thing",
-      "source": "canonical URL for the framework/criterion",
+      "observation": "what you see, neutral and descriptive — no interpretation",
+      "evidence": "the measured value or concrete artefact (e.g. '3.8:1 contrast on 14px label', '20x20 tap target')",
+      "user_impact": "who is harmed and how — this grounds the severity",
+      "fix_suggestion": "a direction the designer can take, not a prescriptive solution",
+      "source_url": "https://... canonical framework URL for this criterion",
       "confidence": 0.0-1.0,
       "x": 0.0-1.0,
       "y": 0.0-1.0
     }
   ]
 }
-Only include a finding when you can name the criterion and point to evidence in the image.
-Return an empty findings array rather than inventing findings. Cap at 6 findings.`;
+Every finding MUST include all four slots (observation, evidence, user_impact, fix_suggestion), a criterion_id, and an https source_url. Omit any finding you cannot fully ground. Return an empty findings array rather than inventing findings. Cap at 6 findings.`;
 
 const PILLAR_PROMPTS: Record<Pillar, string> = {
   usability: `You are auditing this design against Nielsen Norman Group's 10 Usability Heuristics and Norman's affordance/signifier/feedback/mapping principles.
@@ -154,6 +163,12 @@ const PRINCIPLES: Principle[] = [
 
 const SEVERITIES: Severity[] = ["critical", "suggested", "polish"];
 
+const str = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return t ? t : null;
+};
+
 function coerceFinding(raw: unknown, pillar: Pillar): DetectorFinding | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -165,21 +180,39 @@ function coerceFinding(raw: unknown, pillar: Pillar): DetectorFinding | null {
   const severity = SEVERITIES.includes(r.severity as Severity)
     ? (r.severity as Severity)
     : "suggested";
-  const title = typeof r.title === "string" ? r.title.slice(0, 120) : null;
-  const description = typeof r.description === "string" ? r.description : null;
-  const fix = typeof r.fix === "string" ? r.fix : null;
-  if (!title || !description || !fix) return null;
+
+  const title = str(r.title)?.slice(0, 120) ?? null;
+
+  // Four required slots. Fall back to legacy `description` / `fix` when the
+  // model uses the old names, so we don't drop findings during rollout.
+  const observation = str(r.observation) ?? str(r.description);
+  const evidence = str(r.evidence);
+  const user_impact = str(r.user_impact) ?? str(r.impact);
+  const fix_suggestion = str(r.fix_suggestion) ?? str(r.fix);
+
+  // Reject any finding that fails to fill the four analytical slots — this
+  // is the whole point of the schema. No slot, no finding.
+  if (!title || !observation || !evidence || !user_impact || !fix_suggestion) {
+    return null;
+  }
+
+  const criterion_id = validateCriterionId(
+    r.criterion_id ?? r.criterion,
+    `${pillar}.unspecified`,
+  );
+  const source_url = validateSourceUrl(r.source_url ?? r.source);
 
   return {
     pillar,
-    criterion: typeof r.criterion === "string" ? r.criterion : `${pillar}.unspecified`,
+    criterion_id,
     principle,
     severity,
     title,
-    description,
-    fix,
-    evidence: typeof r.evidence === "string" ? r.evidence : undefined,
-    source: typeof r.source === "string" ? r.source : undefined,
+    observation,
+    evidence,
+    user_impact,
+    fix_suggestion,
+    source_url,
     confidence: clamp(Number(r.confidence ?? 0.7), 0, 1),
     x: clamp(Number(r.x ?? 0.5), 0.02, 0.98),
     y: clamp(Number(r.y ?? 0.5), 0.02, 0.98),
@@ -265,7 +298,7 @@ export async function runDetectors(
   const allFindings: DetectorFinding[] = [];
   for (const r of results) {
     for (const f of r.findings) {
-      const key = `${f.criterion}::${f.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
+      const key = `${f.criterion_id}::${f.title.toLowerCase().replace(/\s+/g, " ").trim()}`;
       if (seen.has(key)) continue;
       seen.add(key);
       allFindings.push(f);
@@ -330,8 +363,16 @@ export async function runDetectors(
     severity: f.severity,
     principle: f.principle,
     title: f.title,
-    description: f.description,
-    fix: f.fix,
+    observation: f.observation,
+    evidence: f.evidence,
+    user_impact: f.user_impact,
+    fix_suggestion: f.fix_suggestion,
+    criterion_id: f.criterion_id,
+    source_url: f.source_url,
+    confidence: f.confidence,
+    // Legacy mirrors for existing views
+    description: f.observation,
+    fix: f.fix_suggestion,
     x: f.x,
     y: f.y,
   }));
