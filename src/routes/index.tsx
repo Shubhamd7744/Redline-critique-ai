@@ -124,7 +124,7 @@ function LandingPage() {
       <footer className="border-t border-border py-16 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-8">
           <div className="max-w-sm">
-            <span className="font-serif italic text-2xl tracking-tight mb-4 block">Redline</span>
+            <span className="font-serif italic text-2xl tracking-tight mb-4 block">Redline Critique</span>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Precise, opinionated design critique for designers tired of generic feedback.
             </p>
@@ -138,7 +138,7 @@ function LandingPage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-border flex justify-between font-mono text-[10px] text-muted-foreground">
-          <span>© {new Date().getFullYear()} Redline Archive</span>
+          <span>© {new Date().getFullYear()} Redline Critique</span>
           <span>Grounded in design principles</span>
         </div>
       </footer>
