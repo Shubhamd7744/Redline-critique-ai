@@ -205,6 +205,24 @@ export function ResultsView({
   shareUrl?: string;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Prioritization scheme — presentational only; persisted per critique so a
+  // reviewer's chosen vocabulary survives navigation. Falls back to Severity.
+  const storageKey = critiqueId ? `critique:${critiqueId}:priority-scheme` : null;
+  const [scheme, setScheme] = useState<PriorityScheme>("severity");
+  useEffect(() => {
+    if (!storageKey) return;
+    const saved = window.localStorage.getItem(storageKey);
+    if (saved && (PRIORITY_SCHEME_ORDER as string[]).includes(saved)) {
+      setScheme(saved as PriorityScheme);
+    }
+  }, [storageKey]);
+  useEffect(() => {
+    if (!storageKey) return;
+    window.localStorage.setItem(storageKey, scheme);
+  }, [scheme, storageKey]);
+  const spec = PRIORITY_SCHEMES[scheme];
+
   return (
     <section className="grid grid-cols-1 md:grid-cols-12 gap-12">
       <div className="md:col-span-8 relative">
@@ -235,7 +253,34 @@ export function ResultsView({
             )}
           </div>
           <RubricPanel rubric={payload.rubric} />
-          <IssueList issues={payload.issues} activeId={activeId} onSelect={setActiveId} />
+          <div>
+            <label className="block">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                Priority display
+              </span>
+              <select
+                value={scheme}
+                onChange={(e) => setScheme(e.target.value as PriorityScheme)}
+                className="mt-1 w-full border border-border rounded-sm bg-white text-sm px-2 py-1.5"
+              >
+                {PRIORITY_SCHEME_ORDER.map((k) => (
+                  <option key={k} value={k}>
+                    {PRIORITY_SCHEMES[k].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              {spec.description}
+            </p>
+          </div>
+          <IssueList
+            issues={payload.issues}
+            activeId={activeId}
+            onSelect={setActiveId}
+            scheme={scheme}
+          />
+
           {critiqueId && (
             <DecisionLog
               critiqueId={critiqueId}
