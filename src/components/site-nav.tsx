@@ -21,7 +21,7 @@ export function SiteNav() {
     <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="flex items-center gap-8">
         <Link to="/" className="font-serif italic text-2xl tracking-tight">
-          Redline
+          Redline Critique
         </Link>
         <div className="hidden md:flex gap-6 text-[13px] font-medium tracking-wide uppercase text-muted-foreground">
           {email ? (
