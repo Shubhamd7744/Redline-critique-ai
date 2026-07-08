@@ -35,6 +35,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [mode, setMode] = useState<RitualMode>("design_review");
   const tickRef = useRef<number | null>(null);
 
   const busy = phase === "reading" || phase === "uploading" || phase === "finalizing";
