@@ -34,11 +34,6 @@ export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   );
 }
 
-const SEVERITY_STYLES: Record<Severity, string> = {
-  critical: "bg-primary/10 text-primary",
-  suggested: "bg-stone-200/60 text-foreground",
-  polish: "bg-stone-100 text-muted-foreground",
-};
 
 export function IssueList({
   issues,
