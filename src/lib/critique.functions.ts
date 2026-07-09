@@ -127,7 +127,11 @@ export const uploadCritique = createServerFn({ method: "POST" })
       (data.mimeType === "image/png" && isPng) ||
       (data.mimeType === "image/jpeg" && isJpeg) ||
       (data.mimeType === "image/webp" && isWebp);
-    if (!matches) throw new Error("MIME_MISMATCH");
+    if (!matches) {
+      throw new Error(
+        "MIME_MISMATCH: The file's contents don't match its extension. It may be renamed, corrupted, or not a real image.",
+      );
+    }
 
     const { error: upErr } = await context.supabase.storage
       .from("designs")
