@@ -25,6 +25,33 @@ function readFileAsBase64(
   });
 }
 
+function friendlyUploadError(raw: string, file: File): string {
+  const msg = raw || "";
+  if (/MIME_MISMATCH/i.test(msg)) {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "file";
+    return `This .${ext} file doesn't look like a real image inside. It may have been renamed from another format, exported incorrectly, or corrupted. Try re-exporting as PNG, JPG, or WebP.`;
+  }
+  if (/does not match declared image type/i.test(msg)) {
+    return "The file's contents don't match its extension. Try re-exporting it as PNG, JPG, or WebP.";
+  }
+  if (/mimeType/i.test(msg) && /enum|invalid/i.test(msg)) {
+    return "That image type isn't supported. Please upload a PNG, JPG, or WebP.";
+  }
+  if (/Upload failed/i.test(msg) && /storage|bucket/i.test(msg)) {
+    return "We couldn't save your image to storage. Please try again in a moment.";
+  }
+  if (/fileBase64|too_small|min/i.test(msg)) {
+    return "That file looks empty or unreadable. Try selecting it again.";
+  }
+  if (/network|fetch|Failed to fetch/i.test(msg)) {
+    return "Network hiccup while uploading. Check your connection and try again.";
+  }
+  if (/Unauthorized|auth/i.test(msg)) {
+    return "Your session expired. Please sign in again and retry.";
+  }
+  return msg || "Upload failed. Please try again.";
+}
+
 export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const router = useRouter();
   const upload = useServerFn(uploadCritique);
