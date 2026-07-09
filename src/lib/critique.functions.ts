@@ -127,7 +127,7 @@ export const uploadCritique = createServerFn({ method: "POST" })
       (data.mimeType === "image/png" && isPng) ||
       (data.mimeType === "image/jpeg" && isJpeg) ||
       (data.mimeType === "image/webp" && isWebp);
-    if (!matches) throw new Error("File content does not match declared image type");
+    if (!matches) throw new Error("MIME_MISMATCH");
 
     const { error: upErr } = await context.supabase.storage
       .from("designs")
