@@ -115,9 +115,9 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       });
     } catch (e) {
       stopFakeProgress();
-      const msg = e instanceof Error ? e.message : String(e);
+      const raw = e instanceof Error ? e.message : String(e);
       setPhase("error");
-      setError(msg || "Upload failed");
+      setError(friendlyUploadError(raw, file));
       setProgress(0);
     }
   }
