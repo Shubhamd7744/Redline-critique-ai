@@ -260,7 +260,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
               onClick={retry}
               className="px-4 py-2 bg-primary text-white text-sm rounded-sm hover:bg-primary/90"
             >
-              {pendingFile && validate(pendingFile) === null ? "Retry" : "Choose different file"}
+              {pendingFile && validateImage(pendingFile) === null ? "Retry" : "Choose different file"}
             </button>
             <button
               type="button"
