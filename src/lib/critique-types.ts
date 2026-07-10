@@ -122,20 +122,25 @@ export type RitualMode =
   | "accessibility_audit"
   | "heuristic_eval"
   | "ai_feature_review"
-  | "ethics_sweep";
+  | "ethics_sweep"
+  | "motion_review";
+
+export type PillarId =
+  | "usability"
+  | "accessibility"
+  | "visual"
+  | "ia_content"
+  | "ai_native"
+  | "ethics"
+  | "motion";
 
 export interface RitualModeSpec {
   id: RitualMode;
   label: string;
   short: string;
   description: string;
-  pillars: Array<"usability" | "accessibility" | "visual" | "ia_content" | "ai_native" | "ethics">;
-  weights: Partial<
-    Record<
-      "usability" | "accessibility" | "visual" | "ia_content" | "ai_native" | "ethics",
-      number
-    >
-  >;
+  pillars: PillarId[];
+  weights: Partial<Record<PillarId, number>>;
 }
 
 export const RITUAL_MODES: Record<RitualMode, RitualModeSpec> = {
@@ -194,6 +199,15 @@ export const RITUAL_MODES: Record<RitualMode, RitualModeSpec> = {
     pillars: ["ethics", "accessibility"],
     weights: { ethics: 0.7, accessibility: 0.3 },
   },
+  motion_review: {
+    id: "motion_review",
+    label: "Motion Review",
+    short: "Timing · easing · reduced-motion",
+    description:
+      "Upload a short screen recording or storyboard frames. Audits perceived duration, easing, staging, and prefers-reduced-motion cues (WCAG 2.2.2 / 2.3.3, Material Motion, Apple HIG).",
+    pillars: ["motion"],
+    weights: { motion: 1 },
+  },
 };
 
 export const RITUAL_MODE_ORDER: RitualMode[] = [
@@ -203,4 +217,6 @@ export const RITUAL_MODE_ORDER: RitualMode[] = [
   "heuristic_eval",
   "ai_feature_review",
   "ethics_sweep",
+  "motion_review",
 ];
+
