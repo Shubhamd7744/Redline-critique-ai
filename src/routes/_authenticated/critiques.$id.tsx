@@ -175,6 +175,9 @@ function CritiquePage() {
             issues: c.issues as unknown as CritiquePayload["issues"],
             summary: c.summary ?? "",
             overall_score: Number(c.overall_score ?? 0),
+            perspectives:
+              (c.rubric as { perspectives?: CritiquePayload["perspectives"] } | null)
+                ?.perspectives ?? undefined,
           }}
           imageUrl={c.image_url}
           title={c.title}

@@ -86,11 +86,35 @@ export function validateCriterionId(input: unknown, fallback: string): string {
   return CRITERION_ID_RE.test(trimmed) ? trimmed : fallback;
 }
 
+// One user archetype's read of the design. Kept as a plain data shape here
+// (server layer builds it) so client views can render without importing the
+// server-only detector module.
+export type PerspectiveId = "first_time" | "power_user" | "accessibility" | "skeptic";
+
+export interface PerspectiveObservation {
+  observation: string;
+  evidence: string;
+  impact: string;
+}
+
+export interface PerspectiveVerdict {
+  id: PerspectiveId;
+  persona: string;
+  goal: string;
+  score: number;
+  verdict: string;
+  observations: PerspectiveObservation[];
+  would_return: boolean;
+  ok: boolean;
+  error?: string;
+}
+
 export interface CritiquePayload {
   rubric: RubricScores;
   issues: Issue[];
   summary: string;
   overall_score: number;
+  perspectives?: PerspectiveVerdict[];
 }
 
 export const PRINCIPLE_LABELS: Record<Principle, string> = {

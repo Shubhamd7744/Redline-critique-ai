@@ -3,6 +3,7 @@ import {
   PRINCIPLE_LABELS,
   type CritiquePayload,
   type Issue,
+  type PerspectiveVerdict,
   type RubricScores,
 } from "@/lib/critique-types";
 import { DecisionLog } from "@/components/decision-log";
@@ -149,6 +150,93 @@ export function IssueList({
   );
 }
 
+/**
+ * PerspectivesPanel — four user archetypes' read of the design.
+ *
+ * Each card is a small, self-contained argument: persona → score → verdict →
+ * 2-3 concrete observations tied to visible elements. The intent is that a
+ * reviewer can read a card, look at the design, and check the claim for
+ * themselves — every observation cites what was seen, the concrete evidence,
+ * and why that particular user reacts to it.
+ */
+export function PerspectivesPanel({ perspectives }: { perspectives: PerspectiveVerdict[] }) {
+  const [openId, setOpenId] = useState<string | null>(perspectives[0]?.id ?? null);
+  return (
+    <div>
+      <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
+        User Perspectives · 4 archetypes
+      </h3>
+      <div className="space-y-3">
+        {perspectives.map((p) => {
+          const open = openId === p.id;
+          const low = p.score < 6;
+          return (
+            <div key={p.id} className="border border-border bg-white rounded-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenId(open ? null : p.id)}
+                className="w-full text-left p-4 flex items-start gap-3 hover:bg-muted/40 transition-colors"
+              >
+                <span
+                  className={`font-mono text-lg leading-none pt-0.5 tabular-nums ${low ? "text-primary" : ""}`}
+                >
+                  {p.score.toFixed(1)}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-medium text-sm truncate">{p.persona}</span>
+                  <span className="block text-xs text-muted-foreground italic mt-0.5 line-clamp-2">
+                    "{p.verdict}"
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 font-mono text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
+                    p.would_return
+                      ? "bg-foreground/5 text-muted-foreground"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {p.would_return ? "Would return" : "Would leave"}
+                </span>
+              </button>
+              {open && (
+                <div className="px-4 pb-4 pt-1 border-t border-border/60 space-y-3">
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Goal · {p.goal}
+                  </p>
+                  {p.observations.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      {p.ok ? "No specific observations from this perspective." : "Perspective unavailable."}
+                    </p>
+                  ) : (
+                    <ol className="space-y-3">
+                      {p.observations.map((o, i) => (
+                        <li key={i} className="text-xs leading-relaxed">
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-primary mb-1">
+                            {String(i + 1).padStart(2, "0")} · What I see
+                          </div>
+                          <p className="mb-1.5">{o.observation}</p>
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                            Evidence
+                          </div>
+                          <p className="mb-1.5 text-muted-foreground">{o.evidence}</p>
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                            Why it matters to me
+                          </div>
+                          <p className="text-muted-foreground">{o.impact}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function AnnotatedCanvas({
   imageUrl,
   issues,
@@ -285,6 +373,10 @@ export function ResultsView({
             onSelect={setActiveId}
             scheme={scheme}
           />
+
+          {payload.perspectives && payload.perspectives.length > 0 && (
+            <PerspectivesPanel perspectives={payload.perspectives} />
+          )}
 
           {critiqueId && (
             <DecisionLog
