@@ -169,8 +169,10 @@ export const analyzeCritique = createServerFn({ method: "POST" })
             "heuristic_eval",
             "ai_feature_review",
             "ethics_sweep",
+            "motion_review",
           ])
           .default("design_review"),
+
       })
       .parse(d),
   )
