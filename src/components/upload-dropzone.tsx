@@ -385,8 +385,8 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) handleFile(f);
+          const files = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+          if (files.length) void handleFiles(files);
         }}
         onClick={() => inputRef.current?.click()}
         className={`group relative border-2 border-dashed rounded-sm h-[320px] flex flex-col items-center justify-center bg-white/50 transition-all cursor-pointer ${
@@ -396,18 +396,26 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept={isMotion ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
+          multiple={isMotion}
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          onChange={(e) => {
+            const files = e.target.files ? Array.from(e.target.files) : [];
+            if (files.length) void handleFiles(files);
+          }}
         />
         <div className="flex flex-col items-center gap-4 text-center p-8">
           <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
             <div className="size-2 bg-primary rounded-full" />
           </div>
           <div>
-            <p className="font-medium text-lg">Drop mockup to initiate critique</p>
+            <p className="font-medium text-lg">
+              {isMotion ? "Drop a short clip or storyboard frames" : "Drop mockup to initiate critique"}
+            </p>
             <p className="text-sm text-muted-foreground">
-              PNG, JPG or WebP · max 20MB · {selectedSpec.label}
+              {isMotion
+                ? "MP4/WebM/MOV up to 60MB · or 3–8 PNG/JPG/WebP frames · " + selectedSpec.label
+                : "PNG, JPG or WebP · max 20MB · " + selectedSpec.label}
             </p>
           </div>
         </div>
@@ -415,3 +423,4 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
     </div>
   );
 }
+
