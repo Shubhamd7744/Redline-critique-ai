@@ -273,10 +273,15 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           <input
             ref={inputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={isMotion ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
+            multiple={isMotion}
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            onChange={(e) => {
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              if (files.length) void handleFiles(files);
+            }}
           />
+
         </div>
       </div>
     );
