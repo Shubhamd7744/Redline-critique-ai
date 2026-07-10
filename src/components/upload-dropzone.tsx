@@ -13,8 +13,8 @@ import {
 type Phase = "idle" | "reading" | "composing" | "uploading" | "finalizing" | "error";
 
 
-function readFileAsBase64(
-  file: File,
+function blobToBase64(
+  file: Blob,
   onProgress: (pct: number) => void,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -30,6 +30,7 @@ function readFileAsBase64(
     reader.readAsDataURL(file);
   });
 }
+
 
 function friendlyUploadError(raw: string, file: File): string {
   const msg = raw || "";
