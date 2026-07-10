@@ -237,6 +237,7 @@ export function PerspectivesPanel({ perspectives }: { perspectives: PerspectiveV
   );
 }
 
+export function AnnotatedCanvas({
   imageUrl,
   issues,
   activeId,
