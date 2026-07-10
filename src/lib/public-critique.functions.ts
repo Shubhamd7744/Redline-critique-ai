@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { verifySharePassword } from "./share-password";
+import { logAndThrow, PublicMessages } from "./server-errors";
+
 
 export type PublicCritiqueResult =
   | { kind: "not_found" }
@@ -41,7 +43,7 @@ export const getPublicCritique = createServerFn({ method: "POST" })
       .eq("share_slug", data.slug)
       .eq("is_public", true)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.loadFailed, error);
     if (!row) return { kind: "not_found" };
 
     if (row.share_expires_at && new Date(row.share_expires_at).getTime() < Date.now()) {

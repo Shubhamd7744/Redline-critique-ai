@@ -29,9 +29,11 @@ export const Route = createFileRoute("/c/$slug")({
     };
   },
   notFoundComponent: () => <ShellMessage title="Not found" body="This shared critique doesn't exist." />,
-  errorComponent: ({ error }) => (
-    <ShellMessage title="Something went wrong" body={error.message} />
-  ),
+  errorComponent: ({ error }) => {
+    console.error(error);
+    return <ShellMessage title="Something went wrong" body="This shared critique couldn't be loaded. Please try again shortly." />;
+  },
+
   component: PublicCritiquePage,
 });
 

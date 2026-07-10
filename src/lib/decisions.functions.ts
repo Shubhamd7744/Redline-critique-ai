@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { logAndThrow, PublicMessages } from "./server-errors";
+
 
 /**
  * Decision log for critique findings.
@@ -45,7 +47,8 @@ export const upsertFindingDecision = createServerFn({ method: "POST" })
       )
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.saveFailed, error);
+
     return row;
   });
 
@@ -60,6 +63,6 @@ export const deleteFindingDecision = createServerFn({ method: "POST" })
       .delete()
       .eq("critique_id", data.critiqueId)
       .eq("finding_id", data.findingId);
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.deleteFailed, error);
     return { ok: true };
   });

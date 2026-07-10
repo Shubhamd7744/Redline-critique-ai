@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { logAndThrow, PublicMessages } from "./server-errors";
+
 
 // ---------- Projects ----------
 
@@ -11,9 +13,10 @@ export const listProjects = createServerFn({ method: "GET" })
       .from("projects")
       .select("id, name, description, created_at")
       .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.loadFailed, error);
     return data ?? [];
   });
+
 
 export const createProject = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -26,9 +29,10 @@ export const createProject = createServerFn({ method: "POST" })
       .insert({ user_id: context.userId, name: data.name, description: data.description ?? null })
       .select("id, name, description, created_at")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.saveFailed, error);
     return row;
   });
+
 
 export const getProject = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -39,7 +43,7 @@ export const getProject = createServerFn({ method: "GET" })
       .select("id, name, description, created_at")
       .eq("id", data.id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.loadFailed, error);
     if (!project) throw new Error("Project not found");
 
     const { data: critiques, error: cErr } = await context.supabase
@@ -47,7 +51,8 @@ export const getProject = createServerFn({ method: "GET" })
       .select("id, title, status, overall_score, image_path, created_at")
       .eq("project_id", data.id)
       .order("created_at", { ascending: false });
-    if (cErr) throw new Error(cErr.message);
+    if (cErr) logAndThrow(PublicMessages.loadFailed, cErr);
+
 
     return { project, critiques: critiques ?? [] };
   });
@@ -62,9 +67,10 @@ export const listCritiques = createServerFn({ method: "GET" })
       .select("id, title, status, overall_score, image_path, project_id, created_at")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.loadFailed, error);
     return data ?? [];
   });
+
 
 export const getCritique = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -75,8 +81,9 @@ export const getCritique = createServerFn({ method: "GET" })
       .select("*")
       .eq("id", data.id)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.loadFailed, error);
     if (!row) throw new Error("Critique not found");
+
 
     const { data: signed } = await context.supabase.storage
       .from("designs")
@@ -136,7 +143,7 @@ export const uploadCritique = createServerFn({ method: "POST" })
     const { error: upErr } = await context.supabase.storage
       .from("designs")
       .upload(path, bytes, { contentType: data.mimeType, upsert: false });
-    if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
+    if (upErr) logAndThrow(PublicMessages.uploadFailed, upErr);
 
     const { data: row, error } = await context.supabase
       .from("critiques")
@@ -149,7 +156,8 @@ export const uploadCritique = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.uploadFailed, error);
+
 
     return { id: row.id };
   });
@@ -182,15 +190,19 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       .select("id, image_path, status")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !row) throw new Error("Critique not found");
+    if (error || !row) {
+      if (error) console.error("[server] analyzeCritique lookup:", error);
+      throw new Error("Critique not found");
+    }
 
     const { data: signed, error: sErr } = await context.supabase.storage
       .from("designs")
       .createSignedUrl(row.image_path, 60 * 10);
-    if (sErr || !signed?.signedUrl) throw new Error("Could not access image");
+    if (sErr || !signed?.signedUrl) logAndThrow(PublicMessages.imageUnavailable, sErr);
 
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+    if (!apiKey) logAndThrow(PublicMessages.serverMisconfigured, "Missing LOVABLE_API_KEY");
+
 
     try {
       const { runDetectors } = await import("./detectors.server");
@@ -199,9 +211,7 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       const expectedPillars = RITUAL_MODES[data.mode].pillars.length;
 
       if (merged.detector_errors.length === expectedPillars) {
-        throw new Error(
-          `All detectors failed. First error: ${merged.detector_errors[0].error}`,
-        );
+        throw new Error(PublicMessages.analysisFailed);
       }
 
       const { error: updErr } = await context.supabase
@@ -221,18 +231,22 @@ export const analyzeCritique = createServerFn({ method: "POST" })
           overall_score: merged.overall_score,
         })
         .eq("id", data.id);
-      if (updErr) throw new Error(updErr.message);
+      if (updErr) logAndThrow(PublicMessages.saveFailed, updErr);
 
       return { ok: true, pillar_scores: merged.pillar_scores };
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      // Log full error server-side; store detail in the row for the owner UI,
+      // but surface a generic message to the client.
+      console.error("[server] analyzeCritique failed:", e);
+      const internal = e instanceof Error ? e.message : String(e);
       await context.supabase
         .from("critiques")
-        .update({ status: "failed", error_message: message })
+        .update({ status: "failed", error_message: internal })
         .eq("id", data.id);
-      throw new Error(message);
+      throw new Error(PublicMessages.analysisFailed);
     }
   });
+
 
 export const toggleShare = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -243,7 +257,10 @@ export const toggleShare = createServerFn({ method: "POST" })
       .select("is_public, share_slug")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !row) throw new Error("Not found");
+    if (error || !row) {
+      if (error) console.error("[server] toggleShare lookup:", error);
+      throw new Error(PublicMessages.notFound);
+    }
 
     const nextPublic = !row.is_public;
     const slug = row.share_slug ?? crypto.randomUUID().slice(0, 10);
@@ -252,7 +269,8 @@ export const toggleShare = createServerFn({ method: "POST" })
       .from("critiques")
       .update({ is_public: nextPublic, share_slug: slug })
       .eq("id", data.id);
-    if (uErr) throw new Error(uErr.message);
+    if (uErr) logAndThrow(PublicMessages.saveFailed, uErr);
+
 
     return { is_public: nextPublic, share_slug: slug };
   });
@@ -276,7 +294,11 @@ export const updateShareSettings = createServerFn({ method: "POST" })
       .select("share_slug, is_public")
       .eq("id", data.id)
       .maybeSingle();
-    if (error || !row) throw new Error("Not found");
+    if (error || !row) {
+      if (error) console.error("[server] updateShareSettings lookup:", error);
+      throw new Error(PublicMessages.notFound);
+    }
+
 
     const update: {
       is_public?: boolean;
@@ -313,7 +335,7 @@ export const updateShareSettings = createServerFn({ method: "POST" })
       .from("critiques")
       .update(update)
       .eq("id", data.id);
-    if (uErr) throw new Error(uErr.message);
+    if (uErr) logAndThrow(PublicMessages.saveFailed, uErr);
 
     // Return the updated summary (never the hash)
     const { data: updated } = await context.supabase
@@ -343,6 +365,6 @@ export const deleteCritique = createServerFn({ method: "POST" })
       await context.supabase.storage.from("designs").remove([row.image_path]);
     }
     const { error } = await context.supabase.from("critiques").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.deleteFailed, error);
     return { ok: true };
   });
