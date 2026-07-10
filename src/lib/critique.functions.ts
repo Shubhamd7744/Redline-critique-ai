@@ -228,8 +228,16 @@ export const analyzeCritique = createServerFn({ method: "POST" })
 
     try {
       const { runDetectors } = await import("./detectors.server");
+      const { runPerspectives } = await import("./perspectives.server");
       const { RITUAL_MODES } = await import("./critique-types");
-      const merged = await runDetectors(signed.signedUrl, apiKey, data.mode);
+
+      // Detectors (six-pillar framework audit) and perspectives (four user
+      // archetypes) are decorrelated — run them in parallel so the persona
+      // read isn't gated on framework analysis.
+      const [merged, perspectives] = await Promise.all([
+        runDetectors(signed.signedUrl, apiKey, data.mode),
+        runPerspectives(signed.signedUrl, apiKey),
+      ]);
       const expectedPillars = RITUAL_MODES[data.mode].pillars.length;
 
       if (merged.detector_errors.length === expectedPillars) {
@@ -246,6 +254,7 @@ export const analyzeCritique = createServerFn({ method: "POST" })
             mode: merged.mode,
             pillar_scores: merged.pillar_scores,
             detector_errors: merged.detector_errors,
+            perspectives,
           } as any,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           issues: merged.detector_findings as any,

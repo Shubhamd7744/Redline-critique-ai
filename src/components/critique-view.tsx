@@ -3,6 +3,7 @@ import {
   PRINCIPLE_LABELS,
   type CritiquePayload,
   type Issue,
+  type PerspectiveVerdict,
   type RubricScores,
 } from "@/lib/critique-types";
 import { DecisionLog } from "@/components/decision-log";
