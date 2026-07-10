@@ -335,7 +335,7 @@ export const updateShareSettings = createServerFn({ method: "POST" })
       .from("critiques")
       .update(update)
       .eq("id", data.id);
-    if (uErr) throw new Error(uErr.message);
+    if (uErr) logAndThrow(PublicMessages.saveFailed, uErr);
 
     // Return the updated summary (never the hash)
     const { data: updated } = await context.supabase
@@ -365,6 +365,6 @@ export const deleteCritique = createServerFn({ method: "POST" })
       await context.supabase.storage.from("designs").remove([row.image_path]);
     }
     const { error } = await context.supabase.from("critiques").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) logAndThrow(PublicMessages.deleteFailed, error);
     return { ok: true };
   });
