@@ -4,11 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
 import { RITUAL_MODES, RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
+import {
+  buildStoryboardFromImages,
+  buildStoryboardFromVideo,
+  isVideoFile,
+} from "@/lib/motion-storyboard";
 
-type Phase = "idle" | "reading" | "uploading" | "finalizing" | "error";
+type Phase = "idle" | "reading" | "composing" | "uploading" | "finalizing" | "error";
 
-function readFileAsBase64(
-  file: File,
+
+function blobToBase64(
+  file: Blob,
   onProgress: (pct: number) => void,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -24,6 +30,7 @@ function readFileAsBase64(
     reader.readAsDataURL(file);
   });
 }
+
 
 function friendlyUploadError(raw: string, file: File): string {
   const msg = raw || "";
@@ -93,7 +100,9 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
     }
   }
 
-  function validate(file: File): string | null {
+  const isMotion = mode === "motion_review";
+
+  function validateImage(file: File): string | null {
     if (!file.type.startsWith("image/")) return "That file type isn't supported. Use PNG, JPG, or WebP.";
     if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return "Only PNG, JPG, or WebP images are accepted.";
     if (file.size > 20 * 1024 * 1024) return "File is over the 20MB limit. Try compressing or resizing.";
@@ -101,40 +110,79 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
     return null;
   }
 
-  async function handleFile(file: File) {
+  function validateVideo(file: File): string | null {
+    if (!isVideoFile(file)) return "Motion review needs an MP4/WebM/MOV clip or 3–8 image frames.";
+    if (file.size > 60 * 1024 * 1024) return "Video is over the 60MB limit. Trim or compress it first.";
+    if (file.size === 0) return "That file appears to be empty.";
+    return null;
+  }
+
+  async function handleFiles(files: File[]) {
     setError(null);
-    setPendingFile(file);
-    const v = validate(file);
-    if (v) {
-      setPhase("error");
-      setError(v);
-      setProgress(0);
-      return;
-    }
+    if (files.length === 0) return;
+    const primary = files[0];
+    setPendingFile(primary);
 
     try {
-      // Phase 1: read
-      setPhase("reading");
-      setProgress(0);
-      const base64 = await readFileAsBase64(file, (p) => setProgress(p * 0.15));
+      let uploadBlob: Blob;
+      let uploadMime: "image/png" | "image/jpeg" | "image/webp";
+      let title: string;
 
-      // Phase 2: server upload (no observable progress → animated)
+      if (isMotion) {
+        // Motion review branch: video OR ≥3 image frames → composed contact sheet
+        if (files.length > 1) {
+          const bad = files.find((f) => validateImage(f));
+          if (bad) throw new Error(validateImage(bad)!);
+          setPhase("composing");
+          setProgress(5);
+          const sheet = await buildStoryboardFromImages(files, {
+            onProgress: (_, pct) => setProgress(pct),
+          });
+          uploadBlob = sheet.blob;
+          title = `Motion storyboard · ${sheet.frameCount} frames`;
+        } else if (isVideoFile(primary)) {
+          const v = validateVideo(primary);
+          if (v) throw new Error(v);
+          setPhase("composing");
+          setProgress(5);
+          const sheet = await buildStoryboardFromVideo(primary, {
+            onProgress: (_, pct) => setProgress(pct),
+          });
+          uploadBlob = sheet.blob;
+          title = `Motion review · ${primary.name.replace(/\.[^.]+$/, "")} · ${sheet.durationMs}ms`;
+        } else {
+          const v = validateImage(primary);
+          if (v) throw new Error(v);
+          throw new Error(
+            "Motion review needs a short screen recording (MP4/WebM/MOV) or at least 3 storyboard frames.",
+          );
+        }
+        uploadMime = "image/png";
+      } else {
+        // Standard image branch
+        const v = validateImage(primary);
+        if (v) throw new Error(v);
+        setPhase("reading");
+        setProgress(0);
+        uploadBlob = primary;
+        uploadMime = primary.type as "image/png" | "image/jpeg" | "image/webp";
+        title = primary.name.replace(/\.[^.]+$/, "");
+      }
+
+      // Read → base64
+      setPhase("reading");
+      const base64 = await blobToBase64(uploadBlob, (p) => setProgress(p * 0.15));
+
+      // Upload
       setPhase("uploading");
       startFakeProgress(15, 88);
       const { id } = await upload({
-        data: {
-          projectId,
-          title: file.name.replace(/\.[^.]+$/, ""),
-          fileBase64: base64,
-          mimeType: file.type,
-        },
+        data: { projectId, title, fileBase64: base64, mimeType: uploadMime },
       });
       stopFakeProgress();
 
-      // Phase 3: finalize
       setPhase("finalizing");
       setProgress(100);
-
       router.navigate({ to: "/critiques/$id", params: { id } });
       analyze({ data: { id, mode } }).catch((e) => {
         console.error(e);
@@ -144,9 +192,13 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       stopFakeProgress();
       const raw = e instanceof Error ? e.message : String(e);
       setPhase("error");
-      setError(friendlyUploadError(raw, file));
+      setError(friendlyUploadError(raw, primary));
       setProgress(0);
     }
+  }
+
+  async function handleFile(file: File) {
+    await handleFiles([file]);
   }
 
   function reset() {
@@ -170,8 +222,11 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const phaseLabel =
     phase === "reading"
       ? "Reading file…"
-      : phase === "uploading"
-        ? "Uploading to server…"
+      : phase === "composing"
+        ? "Building storyboard…"
+        : phase === "uploading"
+          ? "Uploading to server…"
+
         : phase === "finalizing"
           ? "Handing off to analyzer…"
           : "";
@@ -205,7 +260,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
               onClick={retry}
               className="px-4 py-2 bg-primary text-white text-sm rounded-sm hover:bg-primary/90"
             >
-              {pendingFile && validate(pendingFile) === null ? "Retry" : "Choose different file"}
+              {pendingFile && validateImage(pendingFile) === null ? "Retry" : "Choose different file"}
             </button>
             <button
               type="button"
@@ -218,10 +273,15 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           <input
             ref={inputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={isMotion ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
+            multiple={isMotion}
             className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            onChange={(e) => {
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              if (files.length) void handleFiles(files);
+            }}
           />
+
         </div>
       </div>
     );
@@ -325,8 +385,8 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) handleFile(f);
+          const files = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+          if (files.length) void handleFiles(files);
         }}
         onClick={() => inputRef.current?.click()}
         className={`group relative border-2 border-dashed rounded-sm h-[320px] flex flex-col items-center justify-center bg-white/50 transition-all cursor-pointer ${
@@ -336,18 +396,26 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept={isMotion ? "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime" : "image/png,image/jpeg,image/webp"}
+          multiple={isMotion}
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          onChange={(e) => {
+            const files = e.target.files ? Array.from(e.target.files) : [];
+            if (files.length) void handleFiles(files);
+          }}
         />
         <div className="flex flex-col items-center gap-4 text-center p-8">
           <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
             <div className="size-2 bg-primary rounded-full" />
           </div>
           <div>
-            <p className="font-medium text-lg">Drop mockup to initiate critique</p>
+            <p className="font-medium text-lg">
+              {isMotion ? "Drop a short clip or storyboard frames" : "Drop mockup to initiate critique"}
+            </p>
             <p className="text-sm text-muted-foreground">
-              PNG, JPG or WebP · max 20MB · {selectedSpec.label}
+              {isMotion
+                ? "MP4/WebM/MOV up to 60MB · or 3–8 PNG/JPG/WebP frames · " + selectedSpec.label
+                : "PNG, JPG or WebP · max 20MB · " + selectedSpec.label}
             </p>
           </div>
         </div>
@@ -355,3 +423,4 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
     </div>
   );
 }
+

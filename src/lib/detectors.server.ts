@@ -33,7 +33,9 @@ export type Pillar =
   | "visual"
   | "ia_content"
   | "ai_native"
-  | "ethics";
+  | "ethics"
+  | "motion";
+
 
 export interface DetectorFinding {
   pillar: Pillar;
@@ -133,6 +135,28 @@ Check for: pre-checked opt-ins, roach-motel cancel flows, confirmshaming copy, d
 If nothing applies, return score 10 and empty findings.
 Map to legacy principle: "consistency" (or "accessibility" for cookie/consent findings).
 ${JSON_SHAPE}`,
+
+  motion: `You are auditing a motion-design artefact. The image you have been given is a STORYBOARD CONTACT SHEET: a numbered grid of frames extracted from a short screen recording or supplied as keyframes, with a header row that states TOTAL DURATION (ms), FRAME COUNT, and the TIMESTAMP (ms) of every frame. Treat the header as ground truth.
+
+Reason about motion from the sampled frames:
+- Perceived duration vs Material Motion / Apple HIG bounds. UI transitions should sit in 80–500ms. Micro-interactions ≤ 200ms. Full-screen transitions ≤ 400ms. Anything > 500ms on a routine interaction is likely too slow. Anything < 80ms is likely imperceptible and can feel like a jump-cut.
+- Easing / velocity curve. Compare inter-frame displacement across the sequence. Roughly equal spacing between frames → LINEAR (rarely appropriate for UI). Larger displacements early then compressing → EASE-OUT (correct default for entrances). Compressing then expanding → EASE-IN (correct for exits). Symmetric slow-fast-slow → EASE-IN-OUT (correct for reversible/persistent transitions). Overshoot past final position → SPRING / OVERSHOOT (use sparingly, character moments only).
+- Staging & choreography (Disney 12 principles adapted for UI): anticipation before a large move, staging so the eye knows where to look, follow-through / secondary motion on related elements, staggered entrance rather than everything moving at once.
+- Continuity: does the element being animated maintain identity (shared-element transition) or teleport / cross-fade? Cross-fades between substantively different layouts break spatial mapping.
+- Reduced-motion posture. Look for evidence the design respects prefers-reduced-motion: subtle non-parallax fallbacks, absence of large translational sweeps, static-first hero states, avoidance of auto-playing looping animations. If the motion is large-translational, auto-looping, or parallax-driven with no visible static alternative, that is a finding under WCAG 2.3.3 (Animation from Interactions) — the design must offer a way to disable non-essential motion.
+- WCAG 2.2.2 (Pause, Stop, Hide): any motion that starts automatically, lasts > 5 seconds, and is presented alongside other content must have a mechanism to pause/stop/hide it.
+- WCAG 2.3.1 (Three Flashes) and 2.3.3 (Animation from Interactions) — flag any strobing / rapid full-viewport flashes.
+
+Ground evidence in the header numbers when you can: cite the total duration, frame count, or specific frame indices. Example evidence: "570ms total across 6 frames; frames 2→5 show near-uniform displacement — reads as linear easing." Example fix_suggestion: "Consider ease-out (cubic-bezier(0.2, 0, 0, 1)) so the element decelerates into rest, matching Material's Standard easing."
+
+Cite criterion ids from these namespaces:
+- wcag.2.2.2, wcag.2.3.1, wcag.2.3.3 — https://www.w3.org/WAI/WCAG22/Understanding/
+- material.motion.duration, material.motion.easing — https://m3.material.io/styles/motion/overview
+- hig.motion — https://developer.apple.com/design/human-interface-guidelines/motion
+- disney.12 — https://en.wikipedia.org/wiki/Twelve_basic_principles_of_animation
+
+Map to legacy principle: "consistency" (or "accessibility" for reduced-motion / WCAG findings).
+${JSON_SHAPE}`,
 };
 
 // Default pillar weights (used when a ritual mode doesn't specify its own).
@@ -143,7 +167,9 @@ const DEFAULT_PILLAR_WEIGHTS: Record<Pillar, number> = {
   ia_content: 0.15,
   ai_native: 0.08,
   ethics: 0.07,
+  motion: 1,
 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single-detector runner
