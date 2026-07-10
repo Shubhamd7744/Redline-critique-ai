@@ -97,6 +97,13 @@ export const getCritique = createServerFn({ method: "GET" })
     };
   });
 
+// Server-side hard cap on decoded image bytes. Client enforces 20MB;
+// keep server slightly higher for encoding overhead but bounded so a
+// malicious client can't stream unbounded data.
+const MAX_IMAGE_BYTES = 25 * 1024 * 1024; // 25 MB
+// Base64 encodes 3 bytes as 4 chars, so max base64 length ≈ ceil(N/3)*4.
+const MAX_IMAGE_B64_LEN = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 4;
+
 export const uploadCritique = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -104,7 +111,11 @@ export const uploadCritique = createServerFn({ method: "POST" })
       .object({
         projectId: z.string().uuid().nullable(),
         title: z.string().min(1).max(160),
-        fileBase64: z.string().min(20),
+        fileBase64: z
+          .string()
+          .min(20)
+          .max(MAX_IMAGE_B64_LEN, "File is too large.")
+          .regex(/^[A-Za-z0-9+/=]+$/, "Invalid file encoding."),
         mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
       })
       .parse(d),
@@ -116,10 +127,20 @@ export const uploadCritique = createServerFn({ method: "POST" })
       "image/webp": "webp",
     };
     const ext = extMap[data.mimeType];
+    // Path is scoped to the user's UUID folder — RLS on storage.objects
+    // isolates each user's uploads. The filename is a random UUID so
+    // uploads can't collide or overwrite existing objects.
     const path = `${context.userId}/${crypto.randomUUID()}.${ext}`;
     const bytes = Uint8Array.from(atob(data.fileBase64), (c) => c.charCodeAt(0));
 
-    // Defense-in-depth: verify magic bytes match declared MIME type
+    // Server-side size cap after decode (defense-in-depth vs. crafted base64).
+    if (bytes.length > MAX_IMAGE_BYTES) {
+      throw new Error("File is too large. Maximum 20MB.");
+    }
+
+    // Defense-in-depth: verify magic bytes match declared MIME type.
+    // Rejects renamed/spoofed files, HTML/SVG disguised as an image,
+    // and payloads that would never render as the claimed image type.
     const isPng =
       bytes.length > 8 &&
       bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
@@ -139,6 +160,7 @@ export const uploadCritique = createServerFn({ method: "POST" })
         "MIME_MISMATCH: The file's contents don't match its extension. It may be renamed, corrupted, or not a real image.",
       );
     }
+
 
     const { error: upErr } = await context.supabase.storage
       .from("designs")
