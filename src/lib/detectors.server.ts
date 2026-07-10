@@ -33,7 +33,9 @@ export type Pillar =
   | "visual"
   | "ia_content"
   | "ai_native"
-  | "ethics";
+  | "ethics"
+  | "motion";
+
 
 export interface DetectorFinding {
   pillar: Pillar;
