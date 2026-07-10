@@ -4,8 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
 import { RITUAL_MODES, RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
+import {
+  buildStoryboardFromImages,
+  buildStoryboardFromVideo,
+  isVideoFile,
+} from "@/lib/motion-storyboard";
 
-type Phase = "idle" | "reading" | "uploading" | "finalizing" | "error";
+type Phase = "idle" | "reading" | "composing" | "uploading" | "finalizing" | "error";
+
 
 function readFileAsBase64(
   file: File,
