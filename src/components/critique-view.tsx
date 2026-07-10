@@ -287,6 +287,10 @@ export function ResultsView({
             scheme={scheme}
           />
 
+          {payload.perspectives && payload.perspectives.length > 0 && (
+            <PerspectivesPanel perspectives={payload.perspectives} />
+          )}
+
           {critiqueId && (
             <DecisionLog
               critiqueId={critiqueId}
