@@ -13,18 +13,40 @@ export const Route = createFileRoute("/c/$slug")({
       throw notFound();
     }
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
+    const FALLBACK_DESC =
+      "A shared AI design critique on Redline Critique — hierarchy, contrast, typography, spacing, and accessibility findings for a UX/UI mockup.";
     if (!loaderData || loaderData.kind !== "ok") {
-      return { meta: [{ title: "Shared critique — Redline" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Shared critique — Redline Critique" }, { name: "robots", content: "noindex" }] };
     }
+    const desc =
+      loaderData.summary && loaderData.summary.length >= 50
+        ? loaderData.summary
+        : FALLBACK_DESC;
+    const url = `https://artful-critique-ai.lovable.app/c/${params.slug}`;
     return {
       meta: [
-        { title: `${loaderData.title} — Redline critique` },
-        { name: "description", content: loaderData.summary ?? "A design critique on Redline." },
-        { property: "og:title", content: `${loaderData.title} — Redline critique` },
-        { property: "og:description", content: loaderData.summary ?? "A design critique on Redline." },
+        { title: `${loaderData.title} — Redline Critique` },
+        { name: "description", content: desc },
+        { property: "og:title", content: `${loaderData.title} — Redline Critique` },
+        { property: "og:description", content: desc },
+        { property: "og:url", content: url },
         { property: "og:type", content: "article" },
         ...(loaderData.image_url ? [{ property: "og:image", content: loaderData.image_url }] : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: loaderData.title,
+            description: desc,
+            url,
+            ...(loaderData.image_url ? { image: loaderData.image_url } : {}),
+          }),
+        },
       ],
     };
   },

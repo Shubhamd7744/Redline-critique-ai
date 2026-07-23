@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /critiques/
+Disallow: /projects/
+
+Sitemap: https://artful-critique-ai.lovable.app/sitemap.xml

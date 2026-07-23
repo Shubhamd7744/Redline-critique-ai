@@ -23,9 +23,9 @@ export function RubricPanel({ rubric }: { rubric: RubricScores }) {
     .map(([k, raw]) => ({ k, n: raw as number }));
   return (
     <div>
-      <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
+      <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
         Analysis Rubric
-      </h3>
+      </h2>
       <div className="space-y-3">
         {entries.map(({ k, n }) => (
           <div key={k} className="flex items-end justify-between border-b border-border pb-1">
@@ -66,9 +66,9 @@ export function IssueList({
   );
   return (
     <div>
-      <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
+      <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
         Issue Log · {spec.label}
-      </h3>
+      </h2>
       <div className="space-y-4">
         {decorated.map(({ issue, originalIdx, badge }) => {
           const active = activeId === issue.id;
@@ -163,9 +163,9 @@ export function PerspectivesPanel({ perspectives }: { perspectives: PerspectiveV
   const [openId, setOpenId] = useState<string | null>(perspectives[0]?.id ?? null);
   return (
     <div>
-      <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
+      <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
         User Perspectives · 4 archetypes
-      </h3>
+      </h2>
       <div className="space-y-3">
         {perspectives.map((p) => {
           const open = openId === p.id;
@@ -250,14 +250,19 @@ export function AnnotatedCanvas({
   onSelect: (id: string | null) => void;
   title: string;
 }) {
+  const cleanTitle = sanitizeAltTitle(title);
   return (
     <div>
       <div className="flex items-center justify-between mb-4 font-mono text-[11px] uppercase tracking-tighter gap-4">
-        <span className="truncate">Annotated / {title}</span>
+        <span className="truncate">Annotated / {cleanTitle}</span>
         <span className="text-primary whitespace-nowrap">{issues.length} active issues</span>
       </div>
       <div className="relative bg-white border border-border shadow-2xl rounded-sm overflow-hidden">
-        <img src={imageUrl} alt={title} className="w-full h-auto block" />
+        <img
+          src={imageUrl}
+          alt={`Annotated design mockup: ${cleanTitle}`}
+          className="w-full h-auto block"
+        />
         {issues.map((issue, idx) => {
           const active = activeId === issue.id;
           const isCritical = issue.severity === "critical";
@@ -280,6 +285,13 @@ export function AnnotatedCanvas({
       </div>
     </div>
   );
+}
+
+/** Strip file extensions and normalize separators so alt text reads as prose. */
+export function sanitizeAltTitle(raw: string): string {
+  const noExt = raw.replace(/\.(png|jpe?g|webp|gif|bmp|tiff?|heic|mp4|mov|webm)$/i, "");
+  const spaced = noExt.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  return spaced || "design mockup";
 }
 
 export function ResultsView({
