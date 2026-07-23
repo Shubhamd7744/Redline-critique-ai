@@ -6,6 +6,9 @@ import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — Redline Critique" },
@@ -18,16 +21,28 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  function goNext() {
+    if (next) {
+      // Same-origin relative path (validated in validateSearch). Use full navigation
+      // so non-router routes like /.lovable/oauth/consent load fresh.
+      window.location.href = next;
+      return;
+    }
+    navigate({ to: "/dashboard", replace: true });
+  }
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard", replace: true });
+      if (data.user) goNext();
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +52,11 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: {
+            emailRedirectTo: next
+              ? `${window.location.origin}${next}`
+              : window.location.origin,
+          },
         });
         if (error) throw error;
         toast.success("Account created. Check your email if confirmation is required.");
@@ -46,7 +65,7 @@ function AuthPage() {
         if (error) throw error;
       }
       const { data } = await supabase.auth.getUser();
-      if (data.user) navigate({ to: "/dashboard", replace: true });
+      if (data.user) goNext();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Auth failed");
     } finally {
@@ -57,7 +76,7 @@ function AuthPage() {
   async function handleGoogle() {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: next ? `${window.location.origin}${next}` : window.location.origin,
     });
     if (result.error) {
       toast.error(result.error instanceof Error ? result.error.message : "Google sign-in failed");
@@ -65,7 +84,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    goNext();
   }
 
   return (
