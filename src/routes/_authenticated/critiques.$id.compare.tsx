@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getCritique, listCritiques } from "@/lib/critique.functions";
-import { RubricPanel } from "@/components/critique-view";
+import { RubricPanel, sanitizeAltTitle } from "@/components/critique-view";
 import { PRINCIPLE_LABELS, type RubricScores } from "@/lib/critique-types";
 
 export const Route = createFileRoute("/_authenticated/critiques/$id/compare")({
@@ -118,7 +118,7 @@ function Panel({
       </div>
       {imageUrl ? (
         <div className="border border-border bg-white p-2">
-          <img src={imageUrl} alt={title} className="w-full h-auto" />
+          <img src={imageUrl} alt={`Design mockup: ${sanitizeAltTitle(title)}`} className="w-full h-auto" />
         </div>
       ) : (
         <div className="aspect-video bg-stone-panel border border-border" />

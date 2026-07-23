@@ -74,18 +74,41 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Redline Critique delivers a senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles.",
+          "Senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles.",
       },
       { name: "author", content: "Redline Critique" },
       { property: "og:title", content: "Redline Critique — AI design critique" },
-      { property: "og:description", content: "Redline Critique delivers a senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles." },
+      { property: "og:description", content: "Senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles." },
       { property: "og:site_name", content: "Redline Critique" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Redline Critique — AI design critique" },
-      { name: "twitter:description", content: "Redline Critique delivers a senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles." },
+      { name: "twitter:description", content: "Senior-level AI redline of your UX/UI — hierarchy, contrast, typography, spacing, and accessibility, grounded in real design principles." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1d4caab2-21f1-41b5-a15d-b9a7c1f8827c/id-preview-c9c1a567--9c446c8c-ebbb-45ef-a3b4-0cfe5ce10dab.lovable.app-1783554247691.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1d4caab2-21f1-41b5-a15d-b9a7c1f8827c/id-preview-c9c1a567--9c446c8c-ebbb-45ef-a3b4-0cfe5ce10dab.lovable.app-1783554247691.png" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://artful-critique-ai.lovable.app/#org",
+              name: "Redline Critique",
+              url: "https://artful-critique-ai.lovable.app/",
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://artful-critique-ai.lovable.app/#site",
+              name: "Redline Critique",
+              url: "https://artful-critique-ai.lovable.app/",
+              publisher: { "@id": "https://artful-critique-ai.lovable.app/#org" },
+            },
+          ],
+        }),
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

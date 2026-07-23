@@ -4,6 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Redline Critique — AI design critique for product teams" },
+      {
+        name: "description",
+        content:
+          "Upload UX/UI mockups and get a senior-level AI redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles.",
+      },
+      { property: "og:title", content: "Redline Critique — AI design critique for product teams" },
+      {
+        property: "og:description",
+        content:
+          "Upload UX/UI mockups and get a senior-level AI redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles.",
+      },
+      { property: "og:url", content: "https://artful-critique-ai.lovable.app/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://artful-critique-ai.lovable.app/" }],
+  }),
   component: LandingPage,
 });
 
@@ -31,7 +50,7 @@ function LandingPage() {
               AI design critique · v1
             </p>
             <h1 className="font-serif italic text-6xl md:text-8xl text-balance leading-[0.9] mb-8">
-              Critique is the <span className="text-primary">highest</span> form of respect.
+              AI design critique for <span className="text-primary">product</span> teams.
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl text-pretty leading-relaxed">
               Automated visual analysis for teams who value precision over speed. Upload your
