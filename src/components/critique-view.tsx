@@ -70,12 +70,12 @@ export function IssueList({
         Issue Log · {spec.label}
       </h2>
       <div className="space-y-4">
-        {decorated.map(({ issue, originalIdx, badge }) => {
+        {decorated.map(({ issue, originalIdx, badge }, listIdx) => {
           const active = activeId === issue.id;
           const isCritical = issue.severity === "critical";
           return (
             <button
-              key={issue.id}
+              key={`${issue.id}-${listIdx}`}
               type="button"
               onClick={() => onSelect(active ? null : issue.id)}
               className={`w-full text-left p-4 bg-white border transition-colors ${
@@ -268,7 +268,7 @@ export function AnnotatedCanvas({
           const isCritical = issue.severity === "critical";
           return (
             <button
-              key={issue.id}
+              key={`${issue.id}-${idx}`}
               onClick={() => onSelect(active ? null : issue.id)}
               style={{ top: `${issue.y * 100}%`, left: `${issue.x * 100}%` }}
               title={issue.title}
