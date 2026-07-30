@@ -107,9 +107,17 @@ function CritiquePage() {
     runMeta?.mode && (RITUAL_MODE_ORDER as string[]).includes(runMeta.mode)
       ? (runMeta.mode as RitualMode)
       : (pendingMode ?? "design_review");
-  const startedAt = runMeta?.started_at ? Date.parse(runMeta.started_at) : Date.parse(c.created_at);
+  // Postgres timestamps come back as "2026-07-30 18:04:45.332938+00", which
+  // Date.parse rejects in some engines — normalise before parsing, and treat
+  // an unparseable value as "old" so the user always gets a way out.
+  const parseTs = (v: string) => Date.parse(v.replace(" ", "T").replace(/\+00$/, "Z"));
+  const rawStarted = runMeta?.started_at ?? c.created_at;
+  const startedAt = parseTs(rawStarted);
   const isStranded =
-    c.status === "analyzing" && !running && Date.now() - startedAt > STALE_RUN_MS;
+    c.status === "analyzing" &&
+    !running &&
+    (!Number.isFinite(startedAt) || Date.now() - startedAt > STALE_RUN_MS);
+
 
 
 
