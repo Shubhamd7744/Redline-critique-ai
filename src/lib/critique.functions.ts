@@ -209,7 +209,7 @@ export const analyzeCritique = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("critiques")
-      .select("id, image_path, status")
+      .select("id, image_path, status, rubric")
       .eq("id", data.id)
       .maybeSingle();
     if (error || !row) {
@@ -217,13 +217,38 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       throw new Error("Critique not found");
     }
 
+    // Mark the run as started. Recording `started_at` lets the UI tell a live
+    // run apart from one stranded by a dropped request, so it can offer a retry
+    // instead of spinning forever.
+    await context.supabase
+      .from("critiques")
+      .update({
+        status: "analyzing",
+        error_message: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rubric: { mode: data.mode, started_at: new Date().toISOString() } as any,
+      })
+      .eq("id", data.id);
+
     const { data: signed, error: sErr } = await context.supabase.storage
       .from("designs")
-      .createSignedUrl(row.image_path, 60 * 10);
-    if (sErr || !signed?.signedUrl) logAndThrow(PublicMessages.imageUnavailable, sErr);
+      .createSignedUrl(row.image_path, 60 * 20);
+    if (sErr || !signed?.signedUrl) {
+      await context.supabase
+        .from("critiques")
+        .update({ status: "failed", error_message: PublicMessages.imageUnavailable })
+        .eq("id", data.id);
+      logAndThrow(PublicMessages.imageUnavailable, sErr);
+    }
 
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) logAndThrow(PublicMessages.serverMisconfigured, "Missing LOVABLE_API_KEY");
+    if (!apiKey) {
+      await context.supabase
+        .from("critiques")
+        .update({ status: "failed", error_message: PublicMessages.serverMisconfigured })
+        .eq("id", data.id);
+      logAndThrow(PublicMessages.serverMisconfigured, "Missing LOVABLE_API_KEY");
+    }
 
 
     try {
@@ -232,16 +257,24 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       const { RITUAL_MODES } = await import("./critique-types");
 
       // Detectors (six-pillar framework audit) and perspectives (four user
-      // archetypes) are decorrelated — run them in parallel so the persona
-      // read isn't gated on framework analysis.
-      const [merged, perspectives] = await Promise.all([
+      // archetypes) are decorrelated — run them in parallel. Perspectives are
+      // a bonus layer: if they blow up, the framework audit still ships.
+      const [detectorSettled, perspectiveSettled] = await Promise.allSettled([
         runDetectors(signed.signedUrl, apiKey, data.mode),
         runPerspectives(signed.signedUrl, apiKey),
       ]);
+
+      if (detectorSettled.status === "rejected") throw detectorSettled.reason;
+      const merged = detectorSettled.value;
+      const perspectives =
+        perspectiveSettled.status === "fulfilled" ? perspectiveSettled.value : [];
+
       const expectedPillars = RITUAL_MODES[data.mode].pillars.length;
 
+      // Every pillar failed — there is nothing worth saving.
       if (merged.detector_errors.length === expectedPillars) {
-        throw new Error(PublicMessages.analysisFailed);
+        const first = merged.detector_errors[0]?.error ?? "all detectors failed";
+        throw new Error(`All ${expectedPillars} detectors failed: ${first}`);
       }
 
       const { error: updErr } = await context.supabase
@@ -260,6 +293,7 @@ export const analyzeCritique = createServerFn({ method: "POST" })
           issues: merged.detector_findings as any,
           summary: merged.summary,
           overall_score: merged.overall_score,
+          error_message: null,
         })
         .eq("id", data.id);
       if (updErr) logAndThrow(PublicMessages.saveFailed, updErr);
@@ -272,11 +306,12 @@ export const analyzeCritique = createServerFn({ method: "POST" })
       const internal = e instanceof Error ? e.message : String(e);
       await context.supabase
         .from("critiques")
-        .update({ status: "failed", error_message: internal })
+        .update({ status: "failed", error_message: internal.slice(0, 500) })
         .eq("id", data.id);
       throw new Error(PublicMessages.analysisFailed);
     }
   });
+
 
 
 export const toggleShare = createServerFn({ method: "POST" })

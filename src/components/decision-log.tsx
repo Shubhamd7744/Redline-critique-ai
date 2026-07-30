@@ -185,12 +185,13 @@ export function DecisionLog({
       </div>
 
       <div className="space-y-2 mb-6">
-        {issues.map((issue) => {
+        {issues.map((issue, idx) => {
           const d = decisions[issue.id];
           const open = openId === issue.id;
           return (
             <div
-              key={issue.id}
+              key={`${issue.id}-${idx}`}
+
               className={`border rounded-sm ${
                 d?.decision === "accepted"
                   ? "border-emerald-500/40 bg-emerald-500/5"

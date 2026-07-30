@@ -15,6 +15,7 @@
 
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { mapPool, withRetry } from "./ai-call.server";
 import {
   RITUAL_MODES,
   validateCriterionId,
@@ -254,22 +255,28 @@ async function runDetector(
     const gateway = createLovableAiGatewayProvider(apiKey);
     const model = gateway("google/gemini-3-flash-preview");
 
-    const result = await generateText({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: PILLAR_PROMPTS[pillar] },
-            { type: "image", image: new URL(imageUrl) },
-          ],
-        },
-      ],
-    });
+    // Time-boxed + retried once: a hung upstream call must never hold the
+    // whole serverless request open past the platform's limit.
+    const result = await withRetry((abortSignal) =>
+      generateText({
+        model,
+        abortSignal,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PILLAR_PROMPTS[pillar] },
+              { type: "image", image: new URL(imageUrl) },
+            ],
+          },
+        ],
+      }),
+    );
 
     const match = result.text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error("No JSON in detector response");
     const parsed = JSON.parse(match[0]) as { score?: unknown; findings?: unknown };
+
 
     const score = clamp(Number(parsed.score ?? 5), 0, 10);
     const rawFindings = Array.isArray(parsed.findings) ? parsed.findings : [];
@@ -309,9 +316,8 @@ export async function runDetectors(
   const spec = RITUAL_MODES[mode];
   const pillars = spec.pillars as Pillar[];
 
-  const settled = await Promise.allSettled(
-    pillars.map((p) => runDetector(p, imageUrl, apiKey)),
-  );
+  // Pooled fan-out (max 3 concurrent) — bounded memory and upstream pressure.
+  const settled = await mapPool(pillars, 3, (p) => runDetector(p, imageUrl, apiKey));
 
   const results: DetectorResult[] = settled.map((s, i) =>
     s.status === "fulfilled"

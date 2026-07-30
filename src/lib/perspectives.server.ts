@@ -15,6 +15,7 @@
 
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { mapPool, withRetry } from "./ai-call.server";
 
 export type PerspectiveId = "first_time" | "power_user" | "accessibility" | "skeptic";
 
@@ -149,18 +150,21 @@ async function runPerspective(
     const gateway = createLovableAiGatewayProvider(apiKey);
     const model = gateway("google/gemini-3-flash-preview");
 
-    const result = await generateText({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: spec.prompt },
-            { type: "image", image: new URL(imageUrl) },
-          ],
-        },
-      ],
-    });
+    const result = await withRetry((abortSignal) =>
+      generateText({
+        model,
+        abortSignal,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: spec.prompt },
+              { type: "image", image: new URL(imageUrl) },
+            ],
+          },
+        ],
+      }),
+    );
 
     const match = result.text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error("No JSON in perspective response");
@@ -209,7 +213,7 @@ export async function runPerspectives(
   apiKey: string,
 ): Promise<PerspectiveVerdict[]> {
   const ids: PerspectiveId[] = ["first_time", "power_user", "accessibility", "skeptic"];
-  const settled = await Promise.allSettled(ids.map((id) => runPerspective(id, imageUrl, apiKey)));
+  const settled = await mapPool(ids, 2, (id) => runPerspective(id, imageUrl, apiKey));
   return settled.map((s, i) =>
     s.status === "fulfilled"
       ? s.value
