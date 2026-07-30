@@ -102,6 +102,17 @@ function CritiquePage() {
 
   const c = q.data;
 
+  const runMeta = (c.rubric ?? null) as { mode?: string; started_at?: string } | null;
+  const lastMode: RitualMode =
+    runMeta?.mode && (RITUAL_MODE_ORDER as string[]).includes(runMeta.mode)
+      ? (runMeta.mode as RitualMode)
+      : (pendingMode ?? "design_review");
+  const startedAt = runMeta?.started_at ? Date.parse(runMeta.started_at) : Date.parse(c.created_at);
+  const isStranded =
+    c.status === "analyzing" && !running && Date.now() - startedAt > STALE_RUN_MS;
+
+
+
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
       <div className="flex items-end justify-between border-b border-border pb-6 mb-12 gap-4">
