@@ -1,8 +1,8 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { uploadCritique, analyzeCritique } from "@/lib/critique.functions";
+
+import { uploadCritique } from "@/lib/critique.functions";
 import { RITUAL_MODES, RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
 import {
   buildStoryboardFromImages,
@@ -62,7 +62,6 @@ function friendlyUploadError(raw: string, file: File): string {
 export function UploadDropzone({ projectId }: { projectId: string | null }) {
   const router = useRouter();
   const upload = useServerFn(uploadCritique);
-  const analyze = useServerFn(analyzeCritique);
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -183,11 +182,10 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
 
       setPhase("finalizing");
       setProgress(100);
-      router.navigate({ to: "/critiques/$id", params: { id } });
-      analyze({ data: { id, mode } }).catch((e) => {
-        console.error(e);
-        toast.error(`Analysis failed: ${e.message ?? "unknown"}`);
-      });
+      // The analysis run is owned by the critique page, not this component.
+      // Firing it here meant the request died the moment the dropzone
+      // unmounted on navigation, stranding the row in "analyzing" forever.
+      router.navigate({ to: "/critiques/$id", params: { id }, search: { mode } });
     } catch (e) {
       stopFakeProgress();
       const raw = e instanceof Error ? e.message : String(e);

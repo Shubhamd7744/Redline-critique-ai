@@ -1,35 +1,78 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getCritique, updateShareSettings, deleteCritique } from "@/lib/critique.functions";
+import {
+  getCritique,
+  updateShareSettings,
+  deleteCritique,
+  analyzeCritique,
+} from "@/lib/critique.functions";
 import { ResultsView, AnalyzingState } from "@/components/critique-view";
 import type { CritiquePayload } from "@/lib/critique-types";
+import { RITUAL_MODE_ORDER, type RitualMode } from "@/lib/critique-types";
 import { downloadCritiquePdf } from "@/lib/critique-pdf";
 
-
+// A run that started more than this long ago and is still "analyzing" is
+// almost certainly stranded (dropped request / worker restart), not live.
+const STALE_RUN_MS = 3 * 60 * 1000;
 
 export const Route = createFileRoute("/_authenticated/critiques/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode:
+      typeof search.mode === "string" && (RITUAL_MODE_ORDER as string[]).includes(search.mode)
+        ? (search.mode as RitualMode)
+        : undefined,
+  }),
   head: () => ({ meta: [{ title: "Critique — Redline" }, { name: "robots", content: "noindex" }] }),
   component: CritiquePage,
 });
 
 function CritiquePage() {
   const { id } = Route.useParams();
+  const { mode: pendingMode } = Route.useSearch();
   const fn = useServerFn(getCritique);
   const updateFn = useServerFn(updateShareSettings);
   const deleteFn = useServerFn(deleteCritique);
+  const analyzeFn = useServerFn(analyzeCritique);
   const [shareOpen, setShareOpen] = useState(false);
+  const [running, setRunning] = useState(false);
+  const startedRef = useRef(false);
 
   const q = useQuery({
     queryKey: ["critique", id],
     queryFn: () => fn({ data: { id } }),
     refetchInterval: (query) => {
       const d = query.state.data;
-      return d && d.status === "analyzing" ? 2000 : false;
+      return d && d.status === "analyzing" ? 2500 : false;
     },
   });
+
+  const runAnalysis = useCallback(
+    async (mode: RitualMode) => {
+      setRunning(true);
+      try {
+        await analyzeFn({ data: { id, mode } });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Analysis failed. Please try again.");
+      } finally {
+        setRunning(false);
+        void q.refetch();
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [analyzeFn, id],
+  );
+
+  // Kick off the run for a freshly uploaded critique. Owned here so the
+  // request lives as long as the page the user is actually looking at.
+  useEffect(() => {
+    if (!pendingMode || startedRef.current) return;
+    if (q.data?.status !== "analyzing") return;
+    startedRef.current = true;
+    void runAnalysis(pendingMode);
+  }, [pendingMode, q.data?.status, runAnalysis]);
 
   async function handleDelete() {
     if (!confirm("Delete this critique? This cannot be undone.")) return;
@@ -40,6 +83,7 @@ function CritiquePage() {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
   }
+
 
   if (q.isLoading) {
     return (
@@ -161,13 +205,39 @@ function CritiquePage() {
         />
       )}
 
-      {c.status === "analyzing" && <AnalyzingState />}
+      {c.status === "analyzing" && (
+        <>
+          <AnalyzingState />
+          {isStranded && !running && (
+            <div className="mt-6 p-6 border border-primary/30 bg-primary/5 rounded-sm flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-2">
+                  This run stalled
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xl">
+                  The analysis didn't report back — usually a dropped connection on a very large
+                  image. Your upload is safe; run it again.
+                </p>
+              </div>
+              <RetryButton onClick={() => runAnalysis(lastMode)} running={running} />
+            </div>
+          )}
+        </>
+      )}
       {c.status === "failed" && (
-        <div className="p-8 border border-primary/30 bg-primary/5 rounded-sm">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-2">Analysis failed</p>
-          <p className="text-sm text-muted-foreground">{c.error_message ?? "Unknown error"}</p>
+        <div className="p-8 border border-primary/30 bg-primary/5 rounded-sm flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-2">
+              Analysis failed
+            </p>
+            <p className="text-sm text-muted-foreground max-w-xl">
+              {c.error_message ?? "Unknown error"}
+            </p>
+          </div>
+          <RetryButton onClick={() => runAnalysis(lastMode)} running={running} />
         </div>
       )}
+
       {c.status === "complete" && c.image_url && c.rubric && c.issues && (
         <ResultsView
           payload={{
