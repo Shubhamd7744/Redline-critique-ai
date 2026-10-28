@@ -19,7 +19,7 @@ import { downloadCritiquePdf } from "@/lib/critique-pdf";
 const STALE_RUN_MS = 3 * 60 * 1000;
 
 export const Route = createFileRoute("/_authenticated/critiques/$id")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { mode?: RitualMode } => ({
     mode:
       typeof search.mode === "string" && (RITUAL_MODE_ORDER as string[]).includes(search.mode)
         ? (search.mode as RitualMode)

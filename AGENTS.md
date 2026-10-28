@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- The brand mark has one source (`src/assets/red-dot.svg`); the served tab icon is a copy of it, so regenerate the copy instead of editing the icon separately.
