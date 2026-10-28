@@ -6,22 +6,22 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Redline Critique — AI design critique for product teams" },
+      { title: "Redline Critique: AI design critique for product teams" },
       {
         name: "description",
         content:
-          "Upload UX/UI mockups and get a senior-level AI redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles.",
+          "Upload a UX/UI mockup and get a graded review of hierarchy, contrast, typography, spacing, and accessibility. Every finding cites the principle it breaks and points at the exact element.",
       },
-      { property: "og:title", content: "Redline Critique — AI design critique for product teams" },
+      { property: "og:title", content: "Redline Critique: AI design critique for product teams" },
       {
         property: "og:description",
         content:
-          "Upload UX/UI mockups and get a senior-level AI redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles.",
+          "Upload a UX/UI mockup and get a graded review of hierarchy, contrast, typography, spacing, and accessibility. Every finding cites the principle it breaks and points at the exact element.",
       },
-      { property: "og:url", content: "https://artful-critique-ai.lovable.app/" },
+      { property: "og:url", content: "https://redline-critique-ai.lovable.app/" },
       { property: "og:type", content: "website" },
     ],
-    links: [{ rel: "canonical", href: "https://artful-critique-ai.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://redline-critique-ai.lovable.app/" }],
   }),
   component: LandingPage,
 });
@@ -47,22 +47,22 @@ function LandingPage() {
         <section className="mb-32 animate-fade-in">
           <div className="max-w-3xl mb-12">
             <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-6">
-              AI design critique · v1
+              AI design critique
             </p>
             <h1 className="font-serif italic text-6xl md:text-8xl text-balance leading-[0.9] mb-8">
-              AI design critique for <span className="text-primary">product</span> teams.
+              Design review that <span className="text-primary">shows</span> its work.
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl text-pretty leading-relaxed">
-              Automated visual analysis for teams who value precision over speed. Upload your
-              mockups for a senior-level redline of hierarchy, contrast, typography, and
-              accessibility.
+              Upload a mockup and get findings you can verify: each one points at the exact element,
+              cites the principle it breaks, and suggests a fix. Graded on hierarchy, contrast,
+              typography, spacing, and accessibility.
             </p>
             <div className="mt-8 flex gap-3">
               <button
                 onClick={handleCTA}
                 className="px-6 py-3 bg-foreground text-background text-sm font-medium rounded-sm hover:bg-foreground/90 transition-colors"
               >
-                {authed ? "Go to archive" : "Sign in to critique"}
+                {authed ? "Go to dashboard" : "Sign in to critique"}
               </button>
               <a
                 href="#methodology"
@@ -79,13 +79,13 @@ function LandingPage() {
             className="group relative border-2 border-dashed border-border rounded-sm h-[400px] flex flex-col items-center justify-center bg-white/50 transition-all hover:border-primary/40 hover:bg-white cursor-pointer"
           >
             <div className="flex flex-col items-center gap-4 text-center p-8">
-              <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
+              <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background">
                 <div className="size-2 bg-primary rounded-full" />
               </div>
               <div>
-                <p className="font-medium text-lg">Drop mockup to initiate critique</p>
+                <p className="font-medium text-lg">Drop a mockup to critique</p>
                 <p className="text-sm text-muted-foreground">
-                  {authed ? "PNG, JPG or WebP · max 20MB" : "Sign in to upload"}
+                  {authed ? "PNG, JPG, or WebP, up to 20MB" : "Sign in to upload"}
                 </p>
               </div>
             </div>
@@ -129,7 +129,7 @@ function LandingPage() {
           {[
             ["01", "Upload", "Drop a screenshot, Figma export, or mockup image."],
             ["02", "Analyze", "The rubric grades six principles; issues are pinned to the canvas."],
-            ["03", "Iterate", "Compare v1 → v2 to measure delta. Share a public critique link."],
+            ["03", "Iterate", "Put two versions side by side to see what changed, then share a public link."],
           ].map(([n, t, d]) => (
             <div key={n} className="border-t border-border pt-6">
               <p className="font-mono text-[11px] uppercase text-primary mb-2">{n}</p>
@@ -158,7 +158,7 @@ function LandingPage() {
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-border flex justify-between font-mono text-[10px] text-muted-foreground">
           <span>© {new Date().getFullYear()} Redline Critique</span>
-          <span>Grounded in design principles</span>
+          <span>WCAG 2.2 · Nielsen heuristics · Apple HIG</span>
         </div>
       </footer>
     </div>
