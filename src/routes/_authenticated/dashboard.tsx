@@ -9,7 +9,7 @@ import { UploadDropzone } from "@/components/upload-dropzone";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Archive — Redline" },
+      { title: "Dashboard · Redline Critique" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -42,7 +42,7 @@ function DashboardPage() {
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
       <section className="mb-16">
-        <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-4">Archive</p>
+        <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-4">Overview</p>
         <div className="flex items-end justify-between mb-8 border-b border-border pb-4">
           <h1 className="font-serif italic text-5xl">Your critiques.</h1>
           <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -53,7 +53,7 @@ function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
           <div className="md:col-span-8">
             <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-              Quick critique · unfiled
+              New critique · saved unfiled
             </p>
             <UploadDropzone projectId={null} />
           </div>

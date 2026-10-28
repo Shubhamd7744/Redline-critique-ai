@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/critiques/$id")({
         ? (search.mode as RitualMode)
         : undefined,
   }),
-  head: () => ({ meta: [{ title: "Critique — Redline" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Critique · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: CritiquePage,
 });
 
@@ -129,7 +129,7 @@ function CritiquePage() {
             to="/dashboard"
             className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-primary mb-2 inline-block"
           >
-            ← Archive
+            ← Dashboard
           </Link>
           <h1 className="font-serif italic text-4xl truncate">{c.title}</h1>
           <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mt-2">
@@ -166,7 +166,7 @@ function CritiquePage() {
             disabled={c.status !== "complete"}
             className="px-3 py-2 border border-border rounded-sm text-sm font-medium hover:bg-muted disabled:opacity-50"
           >
-            {c.is_public ? "Sharing…" : "Share"}
+            {c.is_public ? "Shared" : "Share"}
           </button>
           <button
             onClick={handleDelete}
@@ -234,8 +234,8 @@ function CritiquePage() {
                   This run stalled
                 </p>
                 <p className="text-sm text-muted-foreground max-w-xl">
-                  The analysis didn't report back — usually a dropped connection on a very large
-                  image. Your upload is safe; run it again.
+                  The analysis didn't report back. That usually means a dropped connection on a
+                  large image. Your upload is safe, so just run it again.
                 </p>
               </div>
               <RetryButton onClick={() => runAnalysis(lastMode)} running={running} />

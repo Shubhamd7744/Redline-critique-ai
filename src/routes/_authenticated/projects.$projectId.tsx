@@ -5,7 +5,7 @@ import { getProject } from "@/lib/critique.functions";
 import { UploadDropzone } from "@/components/upload-dropzone";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
-  head: () => ({ meta: [{ title: "Project — Redline" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Project · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: ProjectPage,
 });
 
@@ -24,7 +24,7 @@ function ProjectPage() {
     return (
       <main className="max-w-7xl mx-auto px-6 py-12">
         <p className="text-sm text-muted-foreground">Project not found.</p>
-        <Link to="/dashboard" className="text-primary text-sm">← Back to archive</Link>
+        <Link to="/dashboard" className="text-primary text-sm">← Back to dashboard</Link>
       </main>
     );
   }
@@ -34,7 +34,7 @@ function ProjectPage() {
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
       <Link to="/dashboard" className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground hover:text-primary mb-4 inline-block">
-        ← Archive
+        ← Dashboard
       </Link>
       <div className="flex items-end justify-between border-b border-border pb-6 mb-12">
         <div>

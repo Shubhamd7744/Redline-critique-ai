@@ -24,7 +24,7 @@ export function RubricPanel({ rubric }: { rubric: RubricScores }) {
   return (
     <div>
       <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-        Analysis Rubric
+        Rubric scores
       </h2>
       <div className="space-y-3">
         {entries.map(({ k, n }) => (
@@ -164,7 +164,7 @@ export function PerspectivesPanel({ perspectives }: { perspectives: PerspectiveV
   return (
     <div>
       <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-4">
-        User Perspectives · 4 archetypes
+        Four user perspectives
       </h2>
       <div className="space-y-3">
         {perspectives.map((p) => {
@@ -413,17 +413,21 @@ export function AnalyzingState() {
       <div className="md:col-span-8">
         <div className="h-[600px] bg-white border border-border rounded-sm shadow-sm flex items-center justify-center overflow-hidden animate-pulse">
           <div className="font-mono text-[11px] uppercase tracking-widest text-primary">
-            Scanning geometry…
+            Analyzing your mockup
           </div>
         </div>
       </div>
-      <div className="md:col-span-4 font-mono text-[10px] space-y-1 text-muted-foreground">
-        <div className="text-primary">[SYSTEM] Initializing rubric v4.2</div>
-        <div>[HOOKS] Loading image…</div>
-        <div>[HOOKS] Layout parity check…</div>
-        <div>[HOOKS] Color contrast probe…</div>
-        <div>[HOOKS] Type scale audit…</div>
-        <div>[HOOKS] Assembling critique…</div>
+      <div className="md:col-span-4 text-sm space-y-4 text-muted-foreground leading-relaxed">
+        <p className="text-foreground font-medium">What happens during a critique</p>
+        <p>
+          Six detectors grade the rubric in parallel: usability, accessibility, visual craft,
+          content structure, AI-era patterns, and ethics.
+        </p>
+        <p>
+          Each finding is pinned to the canvas with what was seen, the evidence behind it, and a
+          suggested fix.
+        </p>
+        <p>Most runs finish in under a minute.</p>
       </div>
     </section>
   );

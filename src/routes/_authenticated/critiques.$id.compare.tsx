@@ -7,7 +7,7 @@ import { RubricPanel, sanitizeAltTitle } from "@/components/critique-view";
 import { PRINCIPLE_LABELS, type RubricScores } from "@/lib/critique-types";
 
 export const Route = createFileRoute("/_authenticated/critiques/$id/compare")({
-  head: () => ({ meta: [{ title: "Compare — Redline" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Compare · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: ComparePage,
 });
 
@@ -39,9 +39,9 @@ function ComparePage() {
       <div className="flex items-end justify-between border-b border-border pb-6 mb-12">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-2">Compare</p>
-          <h1 className="font-serif italic text-5xl">The delta.</h1>
+          <h1 className="font-serif italic text-5xl">Side by side.</h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-md">
-            Compare two critiques side by side and measure improvement across the rubric.
+            Put two critiques next to each other to see what changed across the rubric.
           </p>
         </div>
         <select

@@ -1,6 +1,6 @@
 # Redline Critique
 
-> AI-powered UX/UI design critique. Upload a mockup and get a senior-level redline of hierarchy, contrast, typography, spacing, and accessibility — grounded in real design principles (WCAG 2.2, Material Design 3, Apple HIG, Nielsen heuristics).
+> Upload a UI mockup and get a graded design review: rubric scores, findings pinned to the canvas, and suggested fixes. Every finding cites the principle it breaks (WCAG 2.2, Nielsen heuristics, Material Design 3, Apple HIG).
 
 ## Pages
 

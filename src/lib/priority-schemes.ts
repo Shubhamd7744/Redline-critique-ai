@@ -92,7 +92,7 @@ function reachFor(issue: Issue): number {
 const severityScheme: PrioritySchemeSpec = {
   id: "severity",
   label: "Severity",
-  description: "Native detector labels — Critical, Suggested, Polish.",
+  description: "Native labels: Critical, Suggested, Polish.",
   badgeFor: (issue) => {
     const tone: PriorityBadge["tone"] =
       issue.severity === "critical" ? "critical" : issue.severity === "suggested" ? "medium" : "low";
@@ -142,7 +142,7 @@ const nielsenScheme: PrioritySchemeSpec = {
 const moscowScheme: PrioritySchemeSpec = {
   id: "moscow",
   label: "MoSCoW",
-  description: "Must / Should / Could / Won't — release triage.",
+  description: "Must / Should / Could / Won't: release triage.",
   badgeFor: (issue) => {
     const conf = issue.confidence ?? 0.7;
     if (issue.severity === "critical")

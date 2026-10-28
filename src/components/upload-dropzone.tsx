@@ -226,7 +226,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           ? "Uploading to server…"
 
         : phase === "finalizing"
-          ? "Handing off to analyzer…"
+          ? "Starting the analysis…"
           : "";
 
   // ---------- Error state ----------
@@ -324,7 +324,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
       <div>
         <div className="flex items-baseline justify-between mb-3">
           <p className="font-mono text-[11px] uppercase tracking-widest text-primary">
-            Ritual · {selectedSpec.pillars.length} pillar
+            Review mode · {selectedSpec.pillars.length} pillar
             {selectedSpec.pillars.length === 1 ? "" : "s"}
           </p>
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -333,7 +333,7 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
         </div>
         <div
           role="radiogroup"
-          aria-label="Critique ritual mode"
+          aria-label="Review mode"
           className="grid grid-cols-2 md:grid-cols-3 gap-2"
         >
           {RITUAL_MODE_ORDER.map((m) => {
@@ -403,17 +403,17 @@ export function UploadDropzone({ projectId }: { projectId: string | null }) {
           }}
         />
         <div className="flex flex-col items-center gap-4 text-center p-8">
-          <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background group-hover:scale-110 transition-transform">
+          <div className="size-12 rounded-full border border-border flex items-center justify-center bg-background">
             <div className="size-2 bg-primary rounded-full" />
           </div>
           <div>
             <p className="font-medium text-lg">
-              {isMotion ? "Drop a short clip or storyboard frames" : "Drop mockup to initiate critique"}
+              {isMotion ? "Drop a short clip or storyboard frames" : "Drop a mockup to critique"}
             </p>
             <p className="text-sm text-muted-foreground">
               {isMotion
-                ? "MP4/WebM/MOV up to 60MB · or 3–8 PNG/JPG/WebP frames · " + selectedSpec.label
-                : "PNG, JPG or WebP · max 20MB · " + selectedSpec.label}
+                ? "MP4/WebM/MOV up to 60MB, or 3-8 PNG/JPG/WebP frames · " + selectedSpec.label
+                : "PNG, JPG, or WebP, up to 20MB · " + selectedSpec.label}
             </p>
           </div>
         </div>

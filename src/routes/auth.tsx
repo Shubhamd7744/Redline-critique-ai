@@ -11,7 +11,7 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Redline Critique" },
+      { title: "Sign in · Redline Critique" },
       { name: "description", content: "Sign in or create an account to run AI design critiques and revisit your Redline Critique design review history." },
       { name: "robots", content: "noindex" },
     ],
@@ -106,16 +106,16 @@ function AuthPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="p-6">
         <Link to="/" className="font-serif italic text-2xl tracking-tight">
-          Redline
+          Redline Critique
         </Link>
       </div>
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
           <p className="font-mono text-[11px] uppercase tracking-widest text-primary mb-4">
-            {mode === "signin" ? "Access archive" : "Create account"}
+            {mode === "signin" ? "Sign in" : "Create account"}
           </p>
           <h1 className="font-serif italic text-5xl mb-8">
-            {mode === "signin" ? "Welcome back." : "Begin critique."}
+            {mode === "signin" ? "Welcome back." : "Create your account."}
           </h1>
 
           <button

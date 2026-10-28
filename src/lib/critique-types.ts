@@ -180,7 +180,7 @@ export const RITUAL_MODES: Record<RitualMode, RitualModeSpec> = {
     id: "design_review",
     label: "Design Review",
     short: "Full six-pillar audit",
-    description: "The complete rubric — usability, WCAG 2.2, visual, IA, AI-native, ethics.",
+    description: "The complete rubric: usability, accessibility, visual craft, content structure, AI-era patterns, and ethics.",
     pillars: ["usability", "accessibility", "visual", "ia_content", "ai_native", "ethics"],
     weights: {
       usability: 0.25,
@@ -210,7 +210,7 @@ export const RITUAL_MODES: Record<RitualMode, RitualModeSpec> = {
   ai_feature_review: {
     id: "ai_feature_review",
     label: "AI Feature Review",
-    short: "HAX + PAIR",
+    short: "AI-native patterns",
     description: "For AI-driven UI. Weighted toward AI-native patterns and usability.",
     pillars: ["usability", "ai_native", "ethics"],
     weights: { ai_native: 0.5, usability: 0.35, ethics: 0.15 },
@@ -219,7 +219,7 @@ export const RITUAL_MODES: Record<RitualMode, RitualModeSpec> = {
     id: "ethics_sweep",
     label: "Ethics & Dark-Pattern Sweep",
     short: "Deceptive-pattern audit",
-    description: "WSG sustainability + dark-pattern taxonomy + consent UX.",
+    description: "Dark patterns, consent UX, and sustainability signals.",
     pillars: ["ethics", "accessibility"],
     weights: { ethics: 0.7, accessibility: 0.3 },
   },
