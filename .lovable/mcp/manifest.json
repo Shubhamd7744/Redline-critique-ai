@@ -42,7 +42,7 @@
       {
         "name": "get_critique",
         "title": "Get critique",
-        "description": "Fetch a full Redline Critique review by id — rubric scores, prioritized issues, summary, and overall score.",
+        "description": "Fetch a full Redline Critique review by id: rubric scores, prioritized issues, summary, and overall score.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
