@@ -26,7 +26,7 @@ export function SiteNav() {
         <div className="hidden md:flex gap-6 text-[13px] font-medium tracking-wide uppercase text-muted-foreground">
           {email ? (
             <>
-              <Link to="/dashboard" className="hover:text-foreground transition-colors">Archive</Link>
+              <Link to="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
             </>
           ) : (
             <>
