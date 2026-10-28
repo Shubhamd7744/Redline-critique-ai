@@ -23,7 +23,7 @@ export const Route = createFileRoute("/c/$slug")({
       loaderData.summary && loaderData.summary.length >= 50
         ? loaderData.summary
         : FALLBACK_DESC;
-    const url = `https://artful-critique-ai.lovable.app/c/${params.slug}`;
+    const url = `https://redline-critique-ai.lovable.app/c/${params.slug}`;
     return {
       meta: [
         { title: `${loaderData.title} — Redline Critique` },
@@ -64,7 +64,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border">
         <Link to="/" className="font-serif italic text-2xl tracking-tight">
-          Redline
+          Redline Critique
         </Link>
         <div className="flex items-center gap-4">
           <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
