@@ -5,4 +5,4 @@ Disallow: /dashboard
 Disallow: /critiques/
 Disallow: /projects/
 
-Sitemap: https://artful-critique-ai.lovable.app/sitemap.xml
+Sitemap: https://redline-critique-ai.lovable.app/sitemap.xml
