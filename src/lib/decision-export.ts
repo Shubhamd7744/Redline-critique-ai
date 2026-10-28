@@ -70,7 +70,7 @@ const decisionsOnly = (findings: DecoratedFinding[]) =>
 
 function formatJira(input: ExportInput): string {
   const lines: string[] = [];
-  lines.push(`h2. Design critique handoff — ${input.title}`);
+  lines.push(`h2. Design critique handoff: ${input.title}`);
   lines.push("");
   lines.push(`*Overall score:* ${input.overallScore.toFixed(1)} / 10`);
   if (input.summary) lines.push(`*Summary:* ${input.summary}`);
@@ -123,7 +123,7 @@ function formatJira(input: ExportInput): string {
 
 function formatLinear(input: ExportInput): string {
   const lines: string[] = [];
-  lines.push(`# Design critique handoff — ${input.title}`);
+  lines.push(`# Design critique handoff: ${input.title}`);
   lines.push("");
   lines.push(`**Overall:** ${input.overallScore.toFixed(1)} / 10`);
   if (input.summary) lines.push(`**Summary:** ${input.summary}`);
@@ -178,7 +178,7 @@ function formatLinear(input: ExportInput): string {
 
 function formatGithub(input: ExportInput): string {
   const lines: string[] = [];
-  lines.push(`## Design critique — ${input.title}`);
+  lines.push(`## Design critique: ${input.title}`);
   lines.push("");
   lines.push(
     `**Score:** ${input.overallScore.toFixed(1)} / 10${input.shareUrl ? ` · [source](${input.shareUrl})` : ""}`,
@@ -210,7 +210,7 @@ function formatGithub(input: ExportInput): string {
         .filter(Boolean)
         .join(" · ");
       lines.push(
-        `- [ ] **#${f.issue.id} ${SEV_LABEL[f.issue.severity]}** — ${f.issue.title}${meta ? ` _(${meta})_` : ""}`,
+        `- [ ] **#${f.issue.id} ${SEV_LABEL[f.issue.severity]}**: ${f.issue.title}${meta ? ` _(${meta})_` : ""}`,
       );
       lines.push(`  <details><summary>Details</summary>`);
       lines.push("");
@@ -232,7 +232,7 @@ function formatGithub(input: ExportInput): string {
     for (const f of rejected) {
       const d = f.decision!;
       lines.push(
-        `- ~~**#${f.issue.id}** — ${f.issue.title}~~${d.decision_note ? ` — _${d.decision_note}_` : ""}`,
+        `- ~~**#${f.issue.id}**: ${f.issue.title}~~${d.decision_note ? ` — _${d.decision_note}_` : ""}`,
       );
     }
   }
@@ -245,7 +245,7 @@ function formatGithub(input: ExportInput): string {
 
 function formatFigma(input: ExportInput): string {
   const lines: string[] = [];
-  lines.push(`◆ Design critique — ${input.title}`);
+  lines.push(`◆ Design critique: ${input.title}`);
   lines.push(`Score: ${input.overallScore.toFixed(1)}/10`);
   if (input.summary) lines.push(`Summary: ${input.summary}`);
   if (input.shareUrl) lines.push(`Source: ${input.shareUrl}`);
@@ -272,7 +272,7 @@ function formatFigma(input: ExportInput): string {
     if (d.decision_note) lines.push(`  • Note: ${d.decision_note}`);
     if (f.issue.criterion_id) {
       lines.push(
-        `  • Criterion: ${f.issue.criterion_id}${f.issue.source_url ? ` — ${f.issue.source_url}` : ""}`,
+        `  • Criterion: ${f.issue.criterion_id}${f.issue.source_url ? ` (${f.issue.source_url})` : ""}`,
       );
     }
     lines.push("");
@@ -288,22 +288,22 @@ export const EXPORT_FORMATS: Record<
 > = {
   jira: {
     label: "Jira",
-    hint: "Atlassian Wiki Markup — paste into a ticket description or comment.",
+    hint: "Atlassian Wiki markup: paste into a ticket description or comment.",
     format: formatJira,
   },
   linear: {
     label: "Linear",
-    hint: "GitHub-flavored Markdown — Linear renders it natively.",
+    hint: "GitHub-flavored Markdown: Linear renders it natively.",
     format: formatLinear,
   },
   github: {
     label: "GitHub",
-    hint: "GFM with task-list checkboxes — paste into an issue or PR review.",
+    hint: "GFM with task-list checkboxes: paste into an issue or PR review.",
     format: formatGithub,
   },
   figma: {
     label: "Figma comment",
-    hint: "Plain text — Figma strips markdown, so this stays readable.",
+    hint: "Plain text: Figma strips markdown, so this stays readable.",
     format: formatFigma,
   },
 };
