@@ -18,6 +18,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as CSlugRouteImport } from './routes/c.$slug'
+import { Route as Char126oauthSplatRouteImport } from './routes/[~]oauth.$'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedCritiquesIdRouteImport } from './routes/_authenticated/critiques.$id'
@@ -70,6 +71,11 @@ const CSlugRoute = CSlugRouteImport.update({
   path: '/c/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char126oauthSplatRoute = Char126oauthSplatRouteImport.update({
+  id: '/~oauth/$',
+  path: '/~oauth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$slug': typeof CSlugRoute
+  '/~oauth/$': typeof Char126oauthSplatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$slug': typeof CSlugRoute
+  '/~oauth/$': typeof Char126oauthSplatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/c/$slug': typeof CSlugRoute
+  '/~oauth/$': typeof Char126oauthSplatRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/critiques/$id': typeof AuthenticatedCritiquesIdRouteWithChildren
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/c/$slug'
+    | '/~oauth/$'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/critiques/$id'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/c/$slug'
+    | '/~oauth/$'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/critiques/$id'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/dashboard'
     | '/c/$slug'
+    | '/~oauth/$'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/critiques/$id'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CSlugRoute: typeof CSlugRoute
+  Char126oauthSplatRoute: typeof Char126oauthSplatRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/c/$slug'
       fullPath: '/c/$slug'
       preLoaderRoute: typeof CSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/~oauth/$': {
+      id: '/~oauth/$'
+      path: '/~oauth/$'
+      fullPath: '/~oauth/$'
+      preLoaderRoute: typeof Char126oauthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CSlugRoute: CSlugRoute,
+  Char126oauthSplatRoute: Char126oauthSplatRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
