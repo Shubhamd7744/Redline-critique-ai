@@ -75,6 +75,21 @@ function AuthPage() {
 
   async function handleGoogle() {
     setBusy(true);
+    // The managed sign-in broker only accepts Lovable-hosted addresses. On other
+    // hosts (e.g. Vercel) go straight to the backend's Google flow instead.
+    const host = window.location.hostname;
+    const lovableHosted = /(^|\.)lovable\.app$|(^|\.)lovableproject\.com$|^localhost$|^127\.0\.0\.1$/.test(host);
+    if (!lovableHosted) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth${next ? `?next=${encodeURIComponent(next)}` : ""}` },
+      });
+      if (error) {
+        toast.error(error.message || "Google sign-in failed");
+        setBusy(false);
+      }
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: next ? `${window.location.origin}${next}` : window.location.origin,
     });
