@@ -11,7 +11,7 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Redline Critique" },
+      { title: "Sign in · Redline Critique" },
       { name: "description", content: "Sign in or create an account to run AI design critiques and revisit your Redline Critique design review history." },
       { name: "robots", content: "noindex" },
     ],

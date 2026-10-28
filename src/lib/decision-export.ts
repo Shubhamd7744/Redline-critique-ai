@@ -96,7 +96,7 @@ function formatJira(input: ExportInput): string {
     const d = f.decision!;
     const panel = d.decision === "accepted" ? "info" : "warning";
     lines.push(
-      `h3. #${f.issue.id} · ${SEV_LABEL[f.issue.severity]} · ${DECISION_LABEL[d.decision]} — ${f.issue.title}`,
+      `h3. #${f.issue.id} · ${SEV_LABEL[f.issue.severity]} · ${DECISION_LABEL[d.decision]}: ${f.issue.title}`,
     );
     lines.push(`{panel:title=Decision|bgColor=${panel === "info" ? "#DEEBFF" : "#FFF0B3"}}`);
     lines.push(`*Owner:* ${d.owner ?? "unassigned"}   *Due:* ${d.due_date ?? "—"}`);
@@ -150,7 +150,7 @@ function formatLinear(input: ExportInput): string {
     const d = f.decision!;
     const emoji = d.decision === "accepted" ? "✅" : "🚫";
     lines.push(
-      `## ${emoji} #${f.issue.id} · ${SEV_LABEL[f.issue.severity]} — ${f.issue.title}`,
+      `## ${emoji} #${f.issue.id} · ${SEV_LABEL[f.issue.severity]}: ${f.issue.title}`,
     );
     lines.push(
       `**Decision:** ${DECISION_LABEL[d.decision]} · **Owner:** ${d.owner ?? "unassigned"} · **Due:** ${d.due_date ?? "—"}`,
@@ -232,7 +232,7 @@ function formatGithub(input: ExportInput): string {
     for (const f of rejected) {
       const d = f.decision!;
       lines.push(
-        `- ~~**#${f.issue.id}**: ${f.issue.title}~~${d.decision_note ? ` — _${d.decision_note}_` : ""}`,
+        `- ~~**#${f.issue.id}**: ${f.issue.title}~~${d.decision_note ? ` _(${d.decision_note})_` : ""}`,
       );
     }
   }

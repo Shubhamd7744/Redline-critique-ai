@@ -56,7 +56,7 @@ export async function buildStoryboardFromImages(
 ): Promise<StoryboardResult> {
   if (files.length < MIN_FRAMES) {
     throw new Error(
-      `Motion storyboard needs at least ${MIN_FRAMES} frames — ${files.length} selected.`,
+      `Motion storyboard needs at least ${MIN_FRAMES} frames (${files.length} selected).`,
     );
   }
   if (files.length > MAX_FRAMES) {

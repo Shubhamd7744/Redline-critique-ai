@@ -7,7 +7,7 @@ import { RubricPanel, sanitizeAltTitle } from "@/components/critique-view";
 import { PRINCIPLE_LABELS, type RubricScores } from "@/lib/critique-types";
 
 export const Route = createFileRoute("/_authenticated/critiques/$id/compare")({
-  head: () => ({ meta: [{ title: "Compare — Redline Critique" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Compare · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: ComparePage,
 });
 

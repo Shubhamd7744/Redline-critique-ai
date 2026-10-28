@@ -13,7 +13,7 @@ export default defineTool({
   name: "get_critique",
   title: "Get critique",
   description:
-    "Fetch a full Redline Critique review by id — rubric scores, prioritized issues, summary, and overall score.",
+    "Fetch a full Redline Critique review by id: rubric scores, prioritized issues, summary, and overall score.",
   inputSchema: {
     id: z.string().uuid().describe("Critique UUID (from list_critiques)."),
   },

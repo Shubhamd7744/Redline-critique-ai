@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/critiques/$id")({
         ? (search.mode as RitualMode)
         : undefined,
   }),
-  head: () => ({ meta: [{ title: "Critique — Redline Critique" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Critique · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: CritiquePage,
 });
 

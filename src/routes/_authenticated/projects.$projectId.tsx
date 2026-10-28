@@ -5,7 +5,7 @@ import { getProject } from "@/lib/critique.functions";
 import { UploadDropzone } from "@/components/upload-dropzone";
 
 export const Route = createFileRoute("/_authenticated/projects/$projectId")({
-  head: () => ({ meta: [{ title: "Project — Redline Critique" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Project · Redline Critique" }, { name: "robots", content: "noindex" }] }),
   component: ProjectPage,
 });
 

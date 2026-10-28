@@ -9,7 +9,7 @@ import { UploadDropzone } from "@/components/upload-dropzone";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Redline Critique" },
+      { title: "Dashboard · Redline Critique" },
       { name: "robots", content: "noindex" },
     ],
   }),

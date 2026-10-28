@@ -142,7 +142,7 @@ const nielsenScheme: PrioritySchemeSpec = {
 const moscowScheme: PrioritySchemeSpec = {
   id: "moscow",
   label: "MoSCoW",
-  description: "Must / Should / Could / Won't — release triage.",
+  description: "Must / Should / Could / Won't: release triage.",
   badgeFor: (issue) => {
     const conf = issue.confidence ?? 0.7;
     if (issue.severity === "critical")

@@ -15,9 +15,9 @@ export const Route = createFileRoute("/c/$slug")({
   },
   head: ({ loaderData, params }) => {
     const FALLBACK_DESC =
-      "A shared AI design critique on Redline Critique — hierarchy, contrast, typography, spacing, and accessibility findings for a UX/UI mockup.";
+      "A shared AI design critique on Redline Critique: hierarchy, contrast, typography, spacing, and accessibility findings for a UX/UI mockup.";
     if (!loaderData || loaderData.kind !== "ok") {
-      return { meta: [{ title: "Shared critique — Redline Critique" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Shared critique · Redline Critique" }, { name: "robots", content: "noindex" }] };
     }
     const desc =
       loaderData.summary && loaderData.summary.length >= 50
@@ -26,9 +26,9 @@ export const Route = createFileRoute("/c/$slug")({
     const url = `https://redline-critique-ai.lovable.app/c/${params.slug}`;
     return {
       meta: [
-        { title: `${loaderData.title} — Redline Critique` },
+        { title: `${loaderData.title} · Redline Critique` },
         { name: "description", content: desc },
-        { property: "og:title", content: `${loaderData.title} — Redline Critique` },
+        { property: "og:title", content: `${loaderData.title} · Redline Critique` },
         { property: "og:description", content: desc },
         { property: "og:url", content: url },
         { property: "og:type", content: "article" },
