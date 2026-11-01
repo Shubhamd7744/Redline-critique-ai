@@ -78,6 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Upload a UX/UI mockup and get a graded review of hierarchy, contrast, typography, spacing, and accessibility. Every finding cites the principle it breaks.",
       },
       { name: "author", content: "Redline Critique" },
+      { name: "google-site-verification", content: "cw8kEUrEG6zzdWvvEoavTizrj6N0_27reTvGG-3ugew" },
       { property: "og:title", content: "Redline Critique: AI design critique for mockups" },
       { property: "og:description", content: "Upload a UX/UI mockup and get a graded review of hierarchy, contrast, typography, spacing, and accessibility. Every finding cites the principle it breaks." },
       { property: "og:site_name", content: "Redline Critique" },
