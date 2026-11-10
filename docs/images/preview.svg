@@ -1,0 +1,90 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090514"/>
+      <stop offset="50%" stop-color="#150d2a"/>
+      <stop offset="100%" stop-color="#090514"/>
+    </linearGradient>
+    <linearGradient id="critiqueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000" flood-opacity="0.65"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- UI Window Frame -->
+  <g transform="translate(80, 50)" filter="url(#shadow)">
+    <rect width="1040" height="530" rx="16" fill="#130e24" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+    
+    <!-- Titlebar -->
+    <rect width="1040" height="48" rx="16" fill="#0c0818"/>
+    <circle cx="28" cy="24" r="6" fill="#ef4444"/>
+    <circle cx="48" cy="24" r="6" fill="#f59e0b"/>
+    <circle cx="68" cy="24" r="6" fill="#10b981"/>
+    <text x="520" y="29" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle">Redline AI • Intelligent UI/UX Visual Linting &amp; Design Heuristics</text>
+
+    <!-- Canvas Workspace Area (Mock Figma Inspection) -->
+    <g transform="translate(25, 68)">
+      <!-- Artboard Preview -->
+      <rect width="640" height="435" rx="10" fill="#1e1833" stroke="rgba(255,255,255,0.08)"/>
+      <text x="30" y="40" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">Artboard: Mobile Checkout Flow</text>
+
+      <!-- Simulated UI card being reviewed -->
+      <rect x="170" y="70" width="300" height="330" rx="14" fill="#0f0b1d" stroke="rgba(255,255,255,0.1)"/>
+      <rect x="195" y="100" width="250" height="110" rx="8" fill="#2d224d"/>
+      <rect x="195" y="230" width="180" height="18" rx="4" fill="#f8fafc" fill-opacity="0.8"/>
+      <rect x="195" y="260" width="250" height="12" rx="4" fill="#64748b"/>
+      <rect x="195" y="280" width="200" height="12" rx="4" fill="#64748b"/>
+      <rect x="195" y="325" width="250" height="40" rx="8" fill="url(#critiqueGrad)"/>
+      
+      <!-- Visual Redline Overlays -->
+      <!-- Marker 1: Padding issue -->
+      <rect x="180" y="90" width="280" height="130" rx="10" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4"/>
+      <circle cx="180" cy="90" r="10" fill="#ef4444"/>
+      <text x="180" y="94" fill="#fff" font-family="-apple-system, sans-serif" font-size="11" font-weight="800" text-anchor="middle">1</text>
+
+      <!-- Marker 2: Contrast check -->
+      <rect x="185" y="318" width="270" height="54" rx="10" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4"/>
+      <circle cx="455" cy="318" r="10" fill="#f59e0b"/>
+      <text x="455" y="322" fill="#000" font-family="-apple-system, sans-serif" font-size="11" font-weight="800" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Critique Inspector Sidebar -->
+    <g transform="translate(685, 68)">
+      <rect width="330" height="435" rx="10" fill="#0f0b1d" stroke="rgba(255,255,255,0.08)"/>
+      <text x="20" y="35" fill="#f8fafc" font-family="-apple-system, sans-serif" font-size="15" font-weight="700">Heuristic Analysis</text>
+      
+      <!-- Card 1 -->
+      <g transform="translate(20, 55)">
+        <rect width="290" height="100" rx="8" fill="#1c1433" stroke="#ef4444" stroke-width="1"/>
+        <text x="15" y="25" fill="#f87171" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">#1 Alignment &amp; Spacing</text>
+        <text x="15" y="48" fill="#cbd5e1" font-family="-apple-system, sans-serif" font-size="11">Uneven horizontal margin detected.</text>
+        <text x="15" y="66" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">Current: 14px • Recommended: 16px</text>
+        <rect x="15" y="74" width="75" height="18" rx="4" fill="#ef4444" fill-opacity="0.2"/>
+        <text x="52" y="87" fill="#f87171" font-family="-apple-system, sans-serif" font-size="10" font-weight="700" text-anchor="middle">WCAG Rule</text>
+      </g>
+
+      <!-- Card 2 -->
+      <g transform="translate(20, 170)">
+        <rect width="290" height="100" rx="8" fill="#1c1433" stroke="#f59e0b" stroke-width="1"/>
+        <text x="15" y="25" fill="#fbbf24" font-family="-apple-system, sans-serif" font-size="12" font-weight="700">#2 Contrast Ratio Warning</text>
+        <text x="15" y="48" fill="#cbd5e1" font-family="-apple-system, sans-serif" font-size="11">CTA text contrast is 3.8:1.</text>
+        <text x="15" y="66" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="11">Increase text brightness for AAA score.</text>
+        <rect x="15" y="74" width="85" height="18" rx="4" fill="#f59e0b" fill-opacity="0.2"/>
+        <text x="57" y="87" fill="#fbbf24" font-family="-apple-system, sans-serif" font-size="10" font-weight="700" text-anchor="middle">Needs Fix</text>
+      </g>
+
+      <!-- Overall Score Gauge -->
+      <g transform="translate(20, 290)">
+        <rect width="290" height="120" rx="8" fill="#1c1433" stroke="rgba(255,255,255,0.08)"/>
+        <text x="15" y="30" fill="#94a3b8" font-family="-apple-system, sans-serif" font-size="12">Overall Design Quality</text>
+        <text x="15" y="70" fill="#38bdf8" font-family="-apple-system, sans-serif" font-size="34" font-weight="900">88<tspan font-size="18" fill="#64748b">/100</tspan></text>
+        <text x="15" y="100" fill="#34d399" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">✓ Production Ready with Minor Fixes</text>
+      </g>
+    </g>
+  </g>
+</svg>
